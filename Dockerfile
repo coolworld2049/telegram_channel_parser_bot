@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM python:3.11-alpine
 
 COPY requirements.txt /tmp/
 
@@ -12,4 +12,4 @@ ENV PYTHONDONTWRITEBYTECODE=1
 
 WORKDIR /app
 
-ENTRYPOINT  ["bash", "./start.sh"]
+ENTRYPOINT  ["python", "main.py"]

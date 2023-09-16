@@ -24,6 +24,17 @@ class BotSettings(BaseSettings):
         return f"{self.WEBHOOK_URL}/telegram_bot{self.BOT_TOKEN}"
 
 
+class UserBotSettings(BaseSettings):
+    API_ID: int
+    API_HASH: str
+    PHONE_NUMBER: str
+    SESSION_STRING_FILE: str = "src/session/my.txt"
+
+    @property
+    def session_string(self):
+        return pathlib.Path(self.SESSION_STRING_FILE).open("r").readline()
+
+
 class RedisSettings(BaseSettings):
     REDIS_MASTER_HOST: str
     REDIS_MASTER_PORT_NUMBER: Optional[int] = 6379
@@ -40,7 +51,7 @@ class RedisSettings(BaseSettings):
         return f"redis://{password}{self.REDIS_MASTER_HOST}:{self.REDIS_MASTER_PORT_NUMBER}/0"
 
 
-class Settings(BotSettings, RedisSettings):
+class Settings(BotSettings, UserBotSettings, RedisSettings):
     LOG_FILE_PATH: Optional[str] = f"{pathlib.Path(__file__).parent.parent}/.logs"
     LOGGING_LEVEL: Optional[str] = "INFO"
     TZ: Optional[str] = "Europe/Moscow"
