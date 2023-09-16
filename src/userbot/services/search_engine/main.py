@@ -1,11 +1,12 @@
+import time
 from typing import List
+
+from loguru import logger
 
 from userbot.schemas.search import SearchQuery
 
 
-def generate_search_queries(
-    level1: List[str], level2: List[str], level3: List[str]
-):
+def generate_search_queries(level1: List[str], level2: List[str], level3: List[str]):
     # Rule 1: Generate queries with only level 1 keywords
     for country in level1:
         yield SearchQuery(country=country, city="", category="")
@@ -45,7 +46,12 @@ if __name__ == "__main__":
         "кёнгидо",
         "Канвондо Янъян",
     ]
-    for query in generate_search_queries(level1_keywords, level2_keywords, level3_keywords):
-        print(
+    s = time.time()
+    for query in generate_search_queries(
+        level1_keywords, level2_keywords, level3_keywords
+    ):
+        logger.debug(
             f"Country: {query.country} City: {query.city} Category: {query.category}"
         )
+    e = time.time()
+    print(f"{e - s}")
