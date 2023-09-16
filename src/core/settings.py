@@ -12,7 +12,10 @@ load_dotenv()
 class BotSettings(BaseSettings):
     BOT_TOKEN: str
     BOT_COMMANDS: list[BotCommand] = [
-        BotCommand(command="/start", description="start bot"),
+        BotCommand(command="/start", description="Start bot"),
+        BotCommand(
+            command="/search", description="Search telegram channels by keywords"
+        ),
     ]
 
 
@@ -22,7 +25,7 @@ class UserBotSettings(BaseSettings):
     PHONE_NUMBER: str
 
 
-class RedisSettings(BaseSettings):
+class BotRedisSettings(BaseSettings):
     REDIS_MASTER_HOST: str
     REDIS_MASTER_PORT_NUMBER: Optional[int] = 6379
     REDIS_USERNAME: Optional[str] = "default"
@@ -38,7 +41,7 @@ class RedisSettings(BaseSettings):
         return f"redis://{password}{self.REDIS_MASTER_HOST}:{self.REDIS_MASTER_PORT_NUMBER}/0"
 
 
-class Settings(BotSettings, UserBotSettings, RedisSettings):
+class Settings(BotSettings, BotRedisSettings, UserBotSettings):
     LOG_DIR: pathlib.Path = pathlib.Path(__file__).parent.parent
     LOGGING_LEVEL: str = "INFO"
 

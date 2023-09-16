@@ -37,15 +37,3 @@ services:
     ports:
       - "6379:6379"
     restart: always
-  ngrok:
-    image: shkoliar/ngrok:latest
-    hostname: ngrok
-    ports:
-      - "4040:4040"
-    env_file:
-      - ./.env
-    environment:
-      - REGION=${REGION:-eu}
-      - DOMAIN=telegram-bot
-      - PORT=8000
-    restart: "no"

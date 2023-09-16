@@ -5,9 +5,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from routes.telegram import search, auth
 
-app = FastAPI(
-    title="Telethon Userbot", version="0.0.0"
-)
+app = FastAPI(title="Telethon Userbot", version="0.0.0")
 
 origins = [
     "http://localhost",
