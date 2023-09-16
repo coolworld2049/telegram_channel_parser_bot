@@ -39,8 +39,8 @@ class RedisSettings(BaseSettings):
 
 
 class Settings(BotSettings, UserBotSettings, RedisSettings):
-    LOG_FILE_PATH: Optional[str] = f"{pathlib.Path(__file__).parent.parent}"
-    LOGGING_LEVEL: Optional[str] = "INFO"
+    LOG_DIR: pathlib.Path = pathlib.Path(__file__).parent.parent
+    LOGGING_LEVEL: str = "INFO"
 
 
 @lru_cache

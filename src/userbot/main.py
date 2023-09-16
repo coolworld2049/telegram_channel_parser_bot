@@ -3,18 +3,14 @@ from fastapi import FastAPI
 from loguru import logger
 from starlette.middleware.cors import CORSMiddleware
 
-from core._logging import configure_logging
 from routes.telegram import search, auth
 
-configure_logging()
-
 app = FastAPI(
-    title="Telethon Userbot",
+    title="Telethon Userbot", version="0.0.0"
 )
 
 origins = [
     "http://localhost",
-    "https://localhost",
 ]
 
 app.add_middleware(
