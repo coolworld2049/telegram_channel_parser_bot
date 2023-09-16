@@ -10,11 +10,11 @@ async def startup_userbot(aiogram_bot):
     )
     if not client:
         raise ValueError(client)
-    await userbot.start()
     aiogram_bot.client = client
-    logger.info(f"Userbot IDLE")
+    logger.info("Startup")
+    return aiogram_bot
 
 
 async def shutdown_userbot(aiogram_bot):
     await aiogram_bot.client.stop()
-    logger.info("Userbot shutdown")
+    logger.info("Shutdown")

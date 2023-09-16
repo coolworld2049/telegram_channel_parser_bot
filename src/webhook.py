@@ -5,8 +5,9 @@ from loguru import logger
 
 from settings import get_settings
 from bot.dispatcher import dp
-from lifetime import startup_bot, shutdown_bot
+from bot.lifetime import startup_bot, shutdown_bot
 from loader import bot
+from userbot.lifetime import startup_userbot, shutdown_userbot
 
 app = FastAPI()
 router = APIRouter()
@@ -23,6 +24,7 @@ async def startup():
     if not get_settings().WEBHOOK_URL:
         raise ValueError(f"WEBHOOK_URL={get_settings().WEBHOOK_URL}")
     await startup_bot(dp)
+    await startup_userbot(bot)
     app.include_router(router, prefix="/telegram_bot", tags=["telegram"])
     webhook_info = await bot.get_webhook_info()
     if get_settings().webhook_url != webhook_info.url:
@@ -37,6 +39,7 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
+    await shutdown_userbot(bot)
     await shutdown_bot(dp)
 
 

@@ -12,9 +12,6 @@ startup() {
 
 }
 
-dev() {
-  docker-compose -f docker-compose.dev.yml up -d
-}
 shutdown() {
   docker-compose down --rmi local --remove-orphans
 }
@@ -24,7 +21,6 @@ print_usage() {
   echo "Options:"
   echo "  startup           Bring up containers using Docker Compose"
   echo "  shutdown          Remove containers, images"
-  echo "  dev               development mode"
   echo "  --help            Display this help message"
 }
 
@@ -40,9 +36,6 @@ startup)
   ;;
 shutdown)
   shutdown
-  ;;
-dev)
-  dev
   ;;
 --help)
   print_usage

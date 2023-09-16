@@ -28,11 +28,11 @@ class UserBotSettings(BaseSettings):
     API_ID: int
     API_HASH: str
     PHONE_NUMBER: str
-    SESSION_STRING_FILE: str = "src/session/my.txt"
+    SESSION_STRING_FILE: str = "userbot/session/my.txt"
 
     @property
     def session_string(self):
-        return pathlib.Path(self.SESSION_STRING_FILE).open("r").readline()
+        return pathlib.Path(self.SESSION_STRING_FILE).open("r").readline().strip()
 
 
 class RedisSettings(BaseSettings):
@@ -52,7 +52,7 @@ class RedisSettings(BaseSettings):
 
 
 class Settings(BotSettings, UserBotSettings, RedisSettings):
-    LOG_FILE_PATH: Optional[str] = f"{pathlib.Path(__file__).parent.parent}/.logs"
+    LOG_FILE_PATH: Optional[str] = f"{pathlib.Path(__file__).parent.parent}"
     LOGGING_LEVEL: Optional[str] = "INFO"
     TZ: Optional[str] = "Europe/Moscow"
 
