@@ -1,10 +1,10 @@
 from aiogram import Dispatcher
 from loguru import logger
 
-from _logging import configure_logging
+from core._logging import configure_logging
 from bot.handlers import main
 from loader import bot
-from settings import get_settings
+from core.settings import get_settings
 
 
 async def startup_bot(dp: Dispatcher) -> None:

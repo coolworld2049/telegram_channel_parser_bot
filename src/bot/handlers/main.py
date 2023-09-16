@@ -6,14 +6,16 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import User, Message, CallbackQuery
 
-from loader import bot
 from bot.callbacks import MenuCallback
+from bot.handlers import channel
 from bot.keyboards.menu import (
     menu_keyboard_builder,
 )
+from loader import bot
 from template_engine import render_template
 
 router = Router(name=__file__)
+router.include_routers(*[channel.router])
 
 
 async def start_handler(user: User, state: FSMContext, message_id: int):

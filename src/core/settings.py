@@ -1,6 +1,6 @@
 import pathlib
 from functools import lru_cache
-from typing import Optional, Literal
+from typing import Optional
 
 from aiogram.types import BotCommand
 from dotenv import load_dotenv
@@ -11,28 +11,15 @@ load_dotenv()
 
 class BotSettings(BaseSettings):
     BOT_TOKEN: str
-    BOT_RUN_MODE: Literal["webhook", "polling"] = "polling"
     BOT_COMMANDS: list[BotCommand] = [
         BotCommand(command="/start", description="start bot"),
     ]
-    WEBHOOK_URL: Optional[str] = None
-    WEB_APP_HOST: Optional[str] = "0.0.0.0"
-    WEB_APP_PORT: Optional[int] = 8000
-
-    @property
-    def webhook_url(self):
-        return f"{self.WEBHOOK_URL}/telegram_bot{self.BOT_TOKEN}"
 
 
 class UserBotSettings(BaseSettings):
     API_ID: int
     API_HASH: str
     PHONE_NUMBER: str
-    SESSION_STRING_FILE: str = "userbot/session/my.txt"
-
-    @property
-    def session_string(self):
-        return pathlib.Path(self.SESSION_STRING_FILE).open("r").readline().strip()
 
 
 class RedisSettings(BaseSettings):
@@ -54,7 +41,6 @@ class RedisSettings(BaseSettings):
 class Settings(BotSettings, UserBotSettings, RedisSettings):
     LOG_FILE_PATH: Optional[str] = f"{pathlib.Path(__file__).parent.parent}"
     LOGGING_LEVEL: Optional[str] = "INFO"
-    TZ: Optional[str] = "Europe/Moscow"
 
 
 @lru_cache

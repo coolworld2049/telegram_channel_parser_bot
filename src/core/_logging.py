@@ -4,7 +4,7 @@ from typing import Any, Union
 
 from loguru import logger
 
-from settings import get_settings
+from core.settings import get_settings
 
 
 class InterceptHandler(logging.Handler):
