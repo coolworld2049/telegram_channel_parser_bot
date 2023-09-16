@@ -1,26 +1,33 @@
-import pathlib
-
 import uvicorn
 from fastapi import FastAPI
 from loguru import logger
-from telethon import TelegramClient
+from starlette.middleware.cors import CORSMiddleware
 
-from core.settings import get_settings
+from core._logging import configure_logging
 from routes.telegram import search, auth
 
+configure_logging()
+
 app = FastAPI(
-    title=pathlib.Path(__file__).parent.parent.parent.name,
+    title="Telethon Userbot",
 )
-client = TelegramClient(
-    "my",
-    get_settings().API_ID,
-    get_settings().API_HASH,
+
+origins = [
+    "http://localhost",
+    "https://localhost",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
 @app.on_event("startup")
 async def startup():
-    # await startup_userbot(app)
     app.include_router(search.router)
     app.include_router(auth.router)
     logger.info(f"Startup")
@@ -28,7 +35,6 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
-    # await shutdown_userbot(app)
     logger.info("Shutdown")
 
 

@@ -13,6 +13,9 @@ services:
     depends_on:
       - redis
     restart: always
+    volumes:
+      - src/core:/app/core
+      - src/bot:/app/bot
   userbot:
     build:
       context: src
@@ -25,6 +28,9 @@ services:
     depends_on:
       - redis
     restart: always
+    volumes:
+      - src/core:/app/core
+      - src/userbot:/app/userbot
   redis:
     image: redis/redis-stack-server:latest
     hostname: redis

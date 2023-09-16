@@ -1,17 +1,17 @@
 FROM python:3.11-alpine
 
-COPY equirements.txt /tmp/
+COPY requirements.txt /tmp/
 
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-COPY core /app
+COPY core /app/core
 
-COPY userbot /app
+COPY userbot /app/userbot
 
 ENV PYTHONPATH=/app
 
 ENV PYTHONDONTWRITEBYTECODE=1
 
-WORKDIR /app
+WORKDIR /app/userbot
 
 ENTRYPOINT  ["python", "main.py"]

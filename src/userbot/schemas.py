@@ -6,11 +6,6 @@ class ChatSearchRequest(BaseModel):
     limit: int = 10
 
 
-class ChatSearchResponse(BaseModel):
-    username: str = None
-    title: str = None
-
-
 class AuthRequest(BaseModel):
     phone: str = None
 

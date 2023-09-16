@@ -1,29 +1,30 @@
-from fastapi import APIRouter
-from loguru import logger
+from fastapi import APIRouter, HTTPException
+from starlette import status
 from starlette.requests import Request
-from telethon import functions, TelegramClient
+from telethon import functions
 
+import userbot
 import userbot.main
-from schemas import ChatSearchRequest, ChatSearchResponse
+from userbot import client
+from userbot.schemas import ChatSearchRequest
 
 router = APIRouter(prefix="/telegram", tags=["telegram"])
 
 
-@router.post("/search/chat", response_model=list[ChatSearchResponse])
-async def telegram_search_chat(request: Request, payload: ChatSearchRequest):
-    client: TelegramClient = userbot.main.client
-    response: list[ChatSearchResponse] = []
+@router.post("/search", response_model=list[dict])
+async def telegram_search(request: Request, payload: ChatSearchRequest):
+    await client.connect()
+    search_results = None
     for keyword in payload.keywords:
-        search_results = await client(
+        search_results = await userbot.client(
             functions.contacts.SearchRequest(q=keyword, limit=payload.limit)
         )
-
-        logger.debug(f"Channels related to '{keyword}':")
-        async for r in search_results.chats:
-            if r.username:
-                logger.debug(f"@{r.username} - {r.confirm_code}")
-                response.append(
-                    ChatSearchResponse(username=r.username, title=r.confirm_code)
-                )
-
+    if not search_results:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    response = []
+    for x in search_results.chats:
+        data = x.__dict__
+        data["default_banned_rights"] = None
+        data["photo"] = None
+        response.append(data)
     return response
