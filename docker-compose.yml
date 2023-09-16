@@ -9,7 +9,7 @@ services:
     env_file:
       - ./.env
     environment:
-      - REDIS_MASTER_HOST=redis
+      - REDIS_MASTER_HOST=localhost
     depends_on:
       - redis
     restart: always
@@ -23,8 +23,6 @@ services:
     hostname: userbot
     env_file:
       - ./.env
-    environment:
-      - REDIS_MASTER_HOST=redis
     depends_on:
       - redis
     restart: always
