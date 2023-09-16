@@ -4,7 +4,7 @@ from starlette.requests import Request
 from telethon import functions, TelegramClient
 
 import userbot.main
-from userbot.schemas import ChatSearchRequest, ChatSearchResponse
+from schemas import ChatSearchRequest, ChatSearchResponse
 
 router = APIRouter(prefix="/telegram", tags=["telegram"])
 

@@ -2,9 +2,9 @@ import asyncio
 
 from loguru import logger
 
-from bot.dispatcher import dp
-from bot.lifetime import startup_bot, shutdown_bot
-from bot.loader import bot
+from dispatcher import dp
+from lifetime import startup_bot, shutdown_bot
+from loader import bot
 
 
 async def main():

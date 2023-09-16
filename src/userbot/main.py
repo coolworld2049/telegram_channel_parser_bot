@@ -6,7 +6,7 @@ from loguru import logger
 from telethon import TelegramClient
 
 from core.settings import get_settings
-from userbot.routes.telegram import search, auth
+from routes.telegram import search, auth
 
 app = FastAPI(
     title=pathlib.Path(__file__).parent.parent.parent.name,

@@ -2,8 +2,8 @@ from fastapi import APIRouter
 from starlette.requests import Request
 
 import userbot.main
-from userbot.main import client
-from userbot.schemas import AuthRequest, AuthCodeRequest
+from main import client
+from schemas import AuthRequest, AuthCodeRequest
 
 router = APIRouter(prefix="/telegram", tags=["telegram"])
 

@@ -6,9 +6,9 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import User, Message, CallbackQuery
 
-from bot.callbacks import MenuCallback
-from bot.handlers import channel
-from bot.keyboards.menu import (
+from callbacks import MenuCallback
+from handlers import channel
+from keyboards.menu import (
     menu_keyboard_builder,
 )
 from loader import bot

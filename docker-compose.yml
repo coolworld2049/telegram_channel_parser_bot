@@ -1,16 +1,26 @@
 version: '3.9'
 
 services:
-  telegram-bot:
-    build: .
-    hostname: telegram-bot
-    ports:
-      - "8000:8000"
+  bot:
+    build:
+      context: src
+      dockerfile: bot.dockerfile
+    hostname: bot
     env_file:
       - ./.env
     environment:
-      - WEBHOOK_URL
-      - BOT_RUN_MODE=webhook
+      - REDIS_MASTER_HOST=redis
+    depends_on:
+      - redis
+    restart: always
+  userbot:
+    build:
+      context: src
+      dockerfile: userbot.dockerfile
+    hostname: userbot
+    env_file:
+      - ./.env
+    environment:
       - REDIS_MASTER_HOST=redis
     depends_on:
       - redis
