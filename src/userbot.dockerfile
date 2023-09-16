@@ -4,12 +4,14 @@ COPY requirements.txt /tmp/
 
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-COPY src /app
+COPY core /app/core
+
+COPY userbot /app/userbot
 
 ENV PYTHONPATH=/app
 
 ENV PYTHONDONTWRITEBYTECODE=1
 
-WORKDIR /app
+WORKDIR /app/userbot
 
 ENTRYPOINT  ["python", "main.py"]

@@ -1,35 +1,37 @@
 version: '3.9'
 
 services:
-  telegram-bot:
-    build: .
-    hostname: telegram-bot
-    ports:
-      - "8000:8000"
+  bot:
+    build:
+      context: src
+      dockerfile: bot.dockerfile
+    hostname: bot
     env_file:
       - ./.env
     environment:
-      - WEBHOOK_URL
-      - BOT_RUN_MODE=webhook
-      - REDIS_MASTER_HOST=redis
+      - REDIS_MASTER_HOST=localhost
     depends_on:
       - redis
     restart: always
+    volumes:
+      - src/core:/app/core
+      - src/bot:/app/bot
+  userbot:
+    build:
+      context: src
+      dockerfile: userbot.dockerfile
+    hostname: userbot
+    env_file:
+      - ./.env
+    depends_on:
+      - redis
+    restart: always
+    volumes:
+      - src/core:/app/core
+      - src/userbot:/app/userbot
   redis:
     image: redis/redis-stack-server:latest
     hostname: redis
     ports:
       - "6379:6379"
     restart: always
-  ngrok:
-    image: shkoliar/ngrok:latest
-    hostname: ngrok
-    ports:
-      - "4040:4040"
-    env_file:
-      - ./.env
-    environment:
-      - REGION=${REGION:-eu}
-      - DOMAIN=telegram-bot
-      - PORT=8000
-    restart: "no"
