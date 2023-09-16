@@ -1,0 +1,10 @@
+aiogram==3.0.0
+python-dotenv~=1.0.0
+pydantic==2.3.0
+pydantic_settings==2.0.3
+loguru~=0.7.0
+jinja2~=3.1.2
+fastapi==0.103.0
+pytz~=2023.3
+uvicorn~=0.23.2
+redis
