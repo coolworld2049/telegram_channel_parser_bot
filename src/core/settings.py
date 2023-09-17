@@ -1,9 +1,10 @@
 import pathlib
 from functools import lru_cache
-from typing import Optional
+from typing import Optional, Union, List
 
 from aiogram.types import BotCommand
 from dotenv import load_dotenv
+from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings
 
 load_dotenv()
@@ -25,10 +26,21 @@ class UserBotSettings(BaseSettings):
     API_ID: int
     API_HASH: str
     PHONE_NUMBER: str
+    HOST: str = "localhost"
+    PORT: int = 8000
+    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = ["http://localhost"]
+
+    @field_validator("BACKEND_CORS_ORIGINS")
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        elif isinstance(v, (list, str)):
+            return v
+        raise ValueError(v)
 
 
 class BotRedisSettings(BaseSettings):
-    REDIS_MASTER_HOST: str = "127.0.0.1"
+    REDIS_MASTER_HOST: str = "localhost"
     REDIS_MASTER_PORT_NUMBER: Optional[int] = 6379
     REDIS_USERNAME: Optional[str] = "default"
     REDIS_PASSWORD: Optional[str] = None
