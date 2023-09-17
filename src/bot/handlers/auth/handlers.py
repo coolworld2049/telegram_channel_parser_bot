@@ -51,7 +51,7 @@ async def process_confirmation_code(message: types.Message, state: FSMContext):
     payload = {"phone": state_data.get("phone_number"), "code": confirmation_code}
     async with aiohttp.ClientSession() as session:
         async with session.post(
-            f"{get_settings().USERBOT_API_BASE_URL}/telegram/auth/send_code",
+            f"{get_settings().USERBOT_API_BASE_URL}/telegram/auth/sign_in",
             data=payload,
         ) as response:
             data = await response.json()

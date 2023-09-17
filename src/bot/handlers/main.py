@@ -27,7 +27,7 @@ async def start_handler(user: User, state: FSMContext, message_id: int):
             user=user,
             bot=await bot.me(),
         ),
-        reply_markup=menu_keyboard_builder().as_markup(),
+        # reply_markup=menu_keyboard_builder().as_markup(),
     )
 
 

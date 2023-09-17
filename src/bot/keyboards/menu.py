@@ -8,9 +8,9 @@ def menu_keyboard_builder():
     builder = InlineKeyboardBuilder()
     builder.add(
         InlineKeyboardButton(
-            text="Button",
+            text="Search",
             callback_data=MenuCallback(
-                name="button",
+                name="search",
             ).pack(),
         ),
     )
