@@ -7,8 +7,8 @@ class UserbotAuthState(StatesGroup):
 
 
 class SearchState(StatesGroup):
-    limit = State()
-    delay = State()
+    extend = State()
+    clear = State()
     level1 = State()
     level2 = State()
     level3 = State()

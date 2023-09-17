@@ -10,8 +10,8 @@ class TelethonSearchRequest(BaseModel):
 
 class SearchQueryRequest(TelethonSearchRequest):
     level1: list[str]
-    level2: list[str]
-    level3: list[str] | None
+    level2: list[str] | None = None
+    level3: list[str] | None = None
 
 
 class SearchQuery(BaseModel):
