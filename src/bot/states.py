@@ -8,7 +8,5 @@ class UserbotAuthState(StatesGroup):
 
 class SearchState(StatesGroup):
     extend = State()
-    clear = State()
-    level1 = State()
-    level2 = State()
-    level3 = State()
+    delete = State()
+    replace = State()
