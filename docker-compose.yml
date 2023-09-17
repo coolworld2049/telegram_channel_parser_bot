@@ -9,13 +9,21 @@ services:
     env_file:
       - ./.env
     environment:
-      - REDIS_MASTER_HOST=localhost
+      - USERBOT_API_BASE_URL=http://userbot:8000
+      - REDIS_MASTER_HOST=redis
     depends_on:
+      - userbot
       - redis
     restart: always
     volumes:
-      - src/core:/app/core
-      - src/bot:/app/bot
+      - ./src/core:/app/core
+      - ./src/bot:/app/bot
+  redis:
+    image: redis/redis-stack-server:latest
+    hostname: redis
+    ports:
+      - "6379:6379"
+    restart: always
   userbot:
     build:
       context: src
@@ -23,15 +31,15 @@ services:
     hostname: userbot
     env_file:
       - ./.env
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - BACKEND_CORS_ORIGINS=["http://0.0.0.0"]
+    ports:
+      - "8000:8000"
     depends_on:
       - redis
     restart: always
     volumes:
-      - src/core:/app/core
-      - src/userbot:/app/userbot
-  redis:
-    image: redis/redis-stack-server:latest
-    hostname: redis
-    ports:
-      - "6379:6379"
-    restart: always
+      - ./src/core:/app/core
+      - ./src/userbot:/app/userbot

@@ -3,17 +3,14 @@ from fastapi import FastAPI
 from loguru import logger
 from starlette.middleware.cors import CORSMiddleware
 
+from core.settings import get_settings
 from routes.telegram import search, auth
 
 app = FastAPI(title="Telethon Userbot", version="0.0.0")
 
-origins = [
-    "http://localhost",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=get_settings().BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -33,4 +30,4 @@ async def shutdown():
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="localhost", port=8000, reload=False)
+    uvicorn.run(app, host=get_settings().HOST, port=get_settings().PORT, reload=False)
