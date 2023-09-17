@@ -12,13 +12,13 @@ from telethon.tl.types import Channel
 
 import userbot
 import userbot.main
-from userbot import client
+from userbot import telethon_client
 from userbot.schemas.search import (
     SearchQueryRequest,
     GoogleSearchRequest,
     TelethonSearchRequest,
 )
-from userbot.services.search_engine.main import generate_search_queries
+from userbot.services.search_queries.main import generate_search_queries
 
 router = APIRouter(prefix="/telegram", tags=["telegram"])
 
@@ -37,20 +37,20 @@ def get_search_queries(payload):
 
 @router.post("/search_query", response_model=list[str])
 async def telegram_search_query(request: Request, payload: SearchQueryRequest):
-    if client.disconnected:
-        await client.connect()
+    if telethon_client.disconnected:
+        await telethon_client.connect()
     new_search_queries = get_search_queries(payload)
     return new_search_queries
 
 
 @router.post("/telethon_search", response_model=list[dict])
 async def telethon_search_chat(request: Request, payload: TelethonSearchRequest):
-    if client.disconnected:
-        await client.connect()
+    if telethon_client.disconnected:
+        await telethon_client.connect()
     search_results = []
     for i, q in enumerate(get_search_queries(payload)):
         await asyncio.sleep(payload.delay)
-        sr = await userbot.client(
+        sr = await userbot.telethon_client(
             functions.contacts.SearchRequest(q, limit=payload.limit)
         )
         logger.debug(f"{i} - {q}. Telethon search result: {len(sr.chats)}")
@@ -63,8 +63,8 @@ async def telethon_search_chat(request: Request, payload: TelethonSearchRequest)
 
 @router.post("/google_search", response_model=list[dict])
 async def google_search_chat(request: Request, payload: GoogleSearchRequest):
-    if client.disconnected:
-        await client.connect()
+    if telethon_client.disconnected:
+        await telethon_client.connect()
     search_results = []
     for i, q in enumerate(get_search_queries(payload)):
         google_dork = f"site:t.me/joinchat {q}"

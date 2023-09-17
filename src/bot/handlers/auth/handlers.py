@@ -52,7 +52,7 @@ async def process_confirmation_code(message: types.Message, state: FSMContext):
     async with aiohttp.ClientSession() as session:
         async with session.post(
             f"{get_settings().USERBOT_API_BASE_URL}/telegram/auth/sign_in",
-            data=payload,
+            json=payload,
         ) as response:
             data = await response.json()
         if response.status == 200:
