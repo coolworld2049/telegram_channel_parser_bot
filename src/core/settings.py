@@ -13,10 +13,12 @@ class BotSettings(BaseSettings):
     BOT_TOKEN: str
     BOT_COMMANDS: list[BotCommand] = [
         BotCommand(command="/start", description="Start bot"),
+        BotCommand(command="/auth", description="Log in telegram account"),
         BotCommand(
             command="/search", description="Search telegram channels by keywords"
         ),
     ]
+    USERBOT_API_BASE_URL: str = "http://localhost:8000"
 
 
 class UserBotSettings(BaseSettings):
