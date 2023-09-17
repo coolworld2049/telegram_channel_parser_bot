@@ -11,4 +11,3 @@ redis
 aiohttp
 
 Telethon
-git+https://github.com/MarioVilas/googlesearch#egg=google
