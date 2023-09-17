@@ -7,24 +7,35 @@ from userbot.schemas.search import SearchQuery
 
 
 def generate_search_queries(level1: List[str], level2: List[str], level3: List[str]):
+    if level1 is None:
+        level1 = []
+    if level2 is None:
+        level2 = []
+    if level3 is None:
+        level3 = []
+
     # Rule 1: Generate queries with only level 1 keywords
-    for country in level1:
-        yield SearchQuery(country=country, city="", category="")
+    if len(level1) > 0:
+        for country in level1:
+            yield SearchQuery(country=country, city=None, category=None)
 
     # Rule 2: Generate queries with only level 2 keywords
-    for city in level2:
-        yield SearchQuery(country="", city=city, category="")
+    if len(level2) > 0:
+        for city in level2:
+            yield SearchQuery(country=None, city=city, category=None)
 
     # Rule 3: Generate queries by combining level 1 and level 2 keywords
-    for country in level1:
-        for city in level2:
-            yield SearchQuery(country=country, city=city, category="")
+    if len(level1) > 0 and len(level2) > 0:
+        for country in level1:
+            for city in level2:
+                yield SearchQuery(country=country, city=city, category=None)
 
     # Rule 4: Generate queries by combining level 1, level 2, and level 3 keywords
-    for country in level1:
-        for city in level2:
-            for category in level3:
-                yield SearchQuery(country=country, city=city, category=category)
+    if len(level1) > 0 and len(level2) > 0 and len(level3) > 0:
+        for country in level1:
+            for city in level2:
+                for category in level3:
+                    yield SearchQuery(country=country, city=city, category=category)
 
 
 if __name__ == "__main__":

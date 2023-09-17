@@ -154,7 +154,7 @@ async def search_handler(user: types.User, search_queries: list[list]):
     await bot.send_message(user.id, "Wait. It will take some time")
     async with aiohttp.ClientSession() as session:
         async with session.post(
-            f"{get_settings().USERBOT_API_BASE_URL}/telegram/search",
+            f"{get_settings().USERBOT_API_BASE_URL}/telegram/telethon_search",
             json=payload,
         ) as response:
             data = await response.json()
