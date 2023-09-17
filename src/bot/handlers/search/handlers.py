@@ -4,7 +4,7 @@ import aiohttp
 from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BufferedInputFile
+from aiogram.types import BufferedInputFile, InputMediaDocument
 from loguru import logger
 
 from bot.states import SearchState
@@ -56,9 +56,19 @@ async def process_level3(message: types.Message, state: FSMContext):
             if response.status != 200:
                 logger.error(data)
                 await message.answer(data)
-            await message.reply_document(
-                document=BufferedInputFile(
-                    json.dumps(data, indent=2).encode("utf-8"), "result.json"
-                ),
+            unique_usernames = set(map(lambda it: it["username"], data))
+            links = set(map(lambda c: f"https://t.me/{c}", unique_usernames))
+            result_json = BufferedInputFile(
+                json.dumps(data, indent=2, ensure_ascii=True).encode("utf-8"),
+                "result.json",
+            )
+            result_txt = BufferedInputFile(
+                "\n".join(links).encode("utf-8"), "result.txt"
+            )
+            await message.reply_media_group(
+                media=[
+                    InputMediaDocument(media=result_json),
+                    InputMediaDocument(media=result_txt, caption=caption),
+                ],
                 caption=caption,
             )

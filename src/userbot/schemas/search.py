@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 
 
 class TelethonSearchRequest(BaseModel):
-    limit: int | None = 10
+    limit: int | None = 50
     delay: float | None = Field(
         0.1, description="Delay between requests to Telegram server in seconds"
     )
