@@ -44,9 +44,11 @@ async def process_level3(message: types.Message, state: FSMContext):
         "level2": state_data.get("level2"),
         "level3": level3,
     }
-    caption = f"\n\n<code>{json.dumps(payload, indent=2)}</code>"
+    caption = (
+        f"\n\n<code>{' | '.join(list(map(lambda x:x[0], payload.values())))}</code>"
+    )
     await state.clear()
-
+    await message.answer("Wait. It will take some time")
     async with aiohttp.ClientSession() as session:
         async with session.post(
             f"{get_settings().USERBOT_API_BASE_URL}/telegram/search",

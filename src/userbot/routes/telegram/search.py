@@ -2,6 +2,7 @@ import asyncio
 import json
 
 from fastapi import APIRouter, HTTPException
+from loguru import logger
 from starlette import status
 from starlette.requests import Request
 from telethon import functions
@@ -18,6 +19,8 @@ router = APIRouter(prefix="/telegram", tags=["telegram"])
 
 @router.post("/search_query", response_model=list[str])
 async def telegram_search_query(request: Request, payload: SearchQueryRequest):
+    if client.disconnected:
+        await client.connect()
     new_search_queries = []
     for query in generate_search_queries(
         **payload.model_dump(exclude={"limit", "delay"})
@@ -30,15 +33,18 @@ async def telegram_search_query(request: Request, payload: SearchQueryRequest):
 
 @router.post("/search", response_model=list[dict])
 async def telegram_search_chat(request: Request, payload: SearchQueryRequest):
-    await client.connect()
+    if client.disconnected:
+        await client.connect()
     search_results = []
-    for query in generate_search_queries(
-        **payload.model_dump(exclude={"limit", "delay"})
+    for i, query in enumerate(
+        generate_search_queries(**payload.model_dump(exclude={"limit", "delay"}))
     ):
+        await asyncio.sleep(payload.delay)
         q = " ".join(list(query.model_dump().values())).strip(" ")
         sr = await userbot.client(
             functions.contacts.SearchRequest(q, limit=payload.limit)
         )
+        logger.debug(f"{i} - {q}. Chat count: {len(sr.chats)}")
         for src in sr.chats:
             src: Chat
             search_results.append(json.loads(src.to_json(default=str)))

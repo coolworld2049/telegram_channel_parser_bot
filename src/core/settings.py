@@ -1,4 +1,3 @@
-import pathlib
 from functools import lru_cache
 from typing import Optional, Union, List
 
@@ -19,16 +18,16 @@ class BotSettings(BaseSettings):
             command="/search", description="Search telegram channels by keywords"
         ),
     ]
-    USERBOT_API_BASE_URL: str = "http://localhost:8000"
+    USERBOT_API_BASE_URL: str = "http://127.0.0.1:8000"
 
 
 class UserBotSettings(BaseSettings):
     API_ID: int
     API_HASH: str
     PHONE_NUMBER: str
-    HOST: str = "localhost"
+    HOST: str = "127.0.0.1"
     PORT: int = 8000
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = ["http://localhost"]
+    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = ["http://127.0.0.1"]
 
     @field_validator("BACKEND_CORS_ORIGINS")
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
@@ -40,7 +39,7 @@ class UserBotSettings(BaseSettings):
 
 
 class BotRedisSettings(BaseSettings):
-    REDIS_MASTER_HOST: str = "localhost"
+    REDIS_MASTER_HOST: str = "127.0.0.1"
     REDIS_MASTER_PORT_NUMBER: Optional[int] = 6379
     REDIS_USERNAME: Optional[str] = "default"
     REDIS_PASSWORD: Optional[str] = None
@@ -56,8 +55,7 @@ class BotRedisSettings(BaseSettings):
 
 
 class Settings(BotSettings, BotRedisSettings, UserBotSettings):
-    LOG_DIR: pathlib.Path = pathlib.Path(__file__).parent.parent
-    LOGGING_LEVEL: str = "INFO"
+    pass
 
 
 @lru_cache
