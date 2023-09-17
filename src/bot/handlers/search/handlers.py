@@ -46,7 +46,6 @@ async def start_search_message(message: types.Message, state: FSMContext):
 async def start_searching(
     query: types.CallbackQuery, callback_data: MenuCallback, state: FSMContext
 ):
-    await query.message.delete()
     state_data = await state.get_data()
     await search_handler(query.from_user, state_data.get("search_queries"))
 

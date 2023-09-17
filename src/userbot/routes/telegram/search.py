@@ -41,6 +41,8 @@ async def telegram_search_chat(request: Request, payload: SearchQueryRequest):
     ):
         await asyncio.sleep(payload.delay)
         q = " ".join(list(query.model_dump().values())).strip(" ")
+        if q == "":
+            continue
         sr = await userbot.client(
             functions.contacts.SearchRequest(q, limit=payload.limit)
         )
