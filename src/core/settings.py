@@ -28,7 +28,7 @@ class UserBotSettings(BaseSettings):
 
 
 class BotRedisSettings(BaseSettings):
-    REDIS_MASTER_HOST: str
+    REDIS_MASTER_HOST: str = "127.0.0.1"
     REDIS_MASTER_PORT_NUMBER: Optional[int] = 6379
     REDIS_USERNAME: Optional[str] = "default"
     REDIS_PASSWORD: Optional[str] = None
