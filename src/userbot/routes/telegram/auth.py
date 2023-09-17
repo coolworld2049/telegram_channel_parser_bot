@@ -9,7 +9,7 @@ router = APIRouter(prefix="/telegram", tags=["telegram"])
 
 
 @router.post(
-    "/auth/send_code",
+    "/auth",
 )
 async def telegram_auth(request: Request, payload: SendCodeRequest):
     await client.connect()

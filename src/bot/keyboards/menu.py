@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from callbacks import MenuCallback
+from bot.callbacks import MenuCallback
 
 
 def menu_keyboard_builder():
