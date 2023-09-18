@@ -23,6 +23,10 @@ class UserBotSettings(BaseSettings):
     API_HASH: str
 
 
+class SeleniumSettings(BaseSettings):
+    SE_WEBDRIVER_URL: str = "http://localhost:4444/wd/hub"
+
+
 class BotRedisSettings(BaseSettings):
     REDIS_MASTER_HOST: str = "127.0.0.1"
     REDIS_MASTER_PORT_NUMBER: Optional[int] = 6379
@@ -39,7 +43,7 @@ class BotRedisSettings(BaseSettings):
         return f"redis://{password}{self.REDIS_MASTER_HOST}:{self.REDIS_MASTER_PORT_NUMBER}/0"
 
 
-class Settings(BotSettings, BotRedisSettings):
+class Settings(BotSettings, BotRedisSettings, SeleniumSettings):
     pass
 
 

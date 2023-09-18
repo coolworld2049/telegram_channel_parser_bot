@@ -5,6 +5,7 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile, InputMediaDocument, User
+from loguru import logger
 
 from bot.callbacks import MenuCallback
 from bot.cse.main import search_handler, get_search_queries
@@ -52,8 +53,11 @@ async def start_searching(
 ):
     state_data = await state.get_data()
     search_queries = state_data.get("search_queries")
+    if not search_queries:
+        await query.answer("Search queries are empty")
+    logger.debug(search_queries)
     _channels = await search_handler(
-        query.from_user, search_queries, limit=state_data.get("limit")
+        query.from_user, search_queries, limit=state_data.get("limit") or 100
     )
     channels = []
     for ch in list(_channels.values()):

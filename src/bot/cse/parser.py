@@ -1,3 +1,5 @@
+import random
+import time
 import urllib
 from pprint import pprint
 from urllib.parse import urlparse
@@ -29,12 +31,14 @@ def extract_html(driver, solver, url):
     try:
         logger.debug(f"Goto: {url}")
         # Navigate to the URL
+        time.sleep(random.randint(10, random.randint(20, 50)) / 10)
         driver.get(url=url)
         try:
             recaptcha_iframe = driver.find_element(
                 By.XPATH, '//iframe[@title="reCAPTCHA"]'
             )
             solver.click_recaptcha_v2(iframe=recaptcha_iframe)
+            logger.info("reCAPTCHA: click_recaptcha_v2")
         except:
             pass
 
