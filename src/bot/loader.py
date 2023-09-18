@@ -10,7 +10,9 @@ redis = Redis.from_url(get_settings().redis_url)
 
 bot = Bot(get_settings().BOT_TOKEN, parse_mode="HTML")
 
-userbot = Client("pyrogram", in_memory=True, session_string=get_settings().session_string)
+userbot = Client(
+    "pyrogram", in_memory=True, session_string=get_settings().session_string
+)
 
 user_agent = UserAgent()
 

@@ -61,7 +61,7 @@ class BotRedisSettings(BaseSettings):
 
 
 class Settings(BotSettings, BotRedisSettings, UserBotSettings, SeleniumSettings):
-    pass
+    LOG_LEVEL: str = "INFO"
 
 
 @lru_cache

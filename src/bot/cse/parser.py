@@ -35,25 +35,23 @@ LYZEM_BASE_URL = "https://lyzem.com/search?f=channels&l=%3Aen&per-page=100&q="
 def extract_html(driver, solver, url):
     # Set up Chrome options for headless browsing
     try:
-        logger.debug(f"Goto: {url}")
-        # Navigate to the URL
+        logger.info(f"Goto: {url}")
         delay = random.randint(5, random.randint(10, 30)) / 10
-        logger.info(f"delay: {delay} sec")
+        logger.debug(f"delay {delay} sec")
         time.sleep(delay)
         driver.get(url=url)
+        source_html = driver.page_source
+        logger.debug(f"t.me in source_html: {'t.me' in source_html}")
         try:
             recaptcha_iframe = driver.find_element(
                 By.XPATH, '//iframe[@title="reCAPTCHA"]'
             )
-            logger.warning(f"reCAPTCHA - {recaptcha_iframe}")
+            logger.warning(f"reCAPTCHA {recaptcha_iframe}")
             solver.click_recaptcha_v2(iframe=recaptcha_iframe)
             logger.info("reCAPTCHA solved")
             driver.get(url=url)
         except NoSuchElementException as e:
-            logger.info(e.msg)
-        # Get the page's HTML source after JavaScript execution
-        source_html = driver.page_source
-        logger.debug(f"'t.me' in source_html: {'t.me' in source_html}")
+            pass
         return source_html
     except Exception as e:
         logger.error(f"An error occurred: {e}")
@@ -109,6 +107,7 @@ def search_channels_lyzem(driver, solver, query: str, limit=100):
     for i in range(num_pages):
         request_url = initial_request_url + "&p=" + str(i + 1)
         logger.debug(f"Lyzem request url {request_url}; Channels: {len(all_channels)}")
+        logger.info({request_url: all_channels})
         source_html = extract_html(driver, solver, request_url)
         page_channels = parse_lyzem_page(source_html)
         for channel in page_channels:

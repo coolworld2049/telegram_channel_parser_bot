@@ -81,17 +81,23 @@ def fill_api():
     initial_selection(api_id, app_hash)
 
 
-def session_maker(createbot, api_id, app_hash, phone = None):
+def session_maker(createbot, api_id, app_hash, phone=None):
     clear()
     if re.search("asyncio", pyrogram.__version__):
         if createbot == 1:
-            app = pyrogram.Client("pyrogram", api_id=api_id, api_hash=app_hash, phone_number=phone)
+            app = pyrogram.Client(
+                "pyrogram", api_id=api_id, api_hash=app_hash, phone_number=phone
+            )
             ses = "pyrogram.session"
             sestxt = "pyrogram.txt"
         elif createbot == 2:
             bot_token = os.getenv("BOT_TOKEN") or input("Insert bot token: ")
             app = pyrogram.Client(
-                "bot", api_id=api_id, api_hash=app_hash, bot_token=bot_token, phone_number=phone
+                "bot",
+                api_id=api_id,
+                api_hash=app_hash,
+                bot_token=bot_token,
+                phone_number=phone,
             )
             ses = "bot.session"
             sestxt = "bot.txt"
@@ -108,13 +114,19 @@ def session_maker(createbot, api_id, app_hash, phone = None):
         asyncio.get_event_loop().run_until_complete(start_app())
     else:
         if createbot == 1:
-            app = pyrogram.Client("pyrogram", api_id=api_id, api_hash=app_hash, phone_number=phone)
+            app = pyrogram.Client(
+                "pyrogram", api_id=api_id, api_hash=app_hash, phone_number=phone
+            )
             ses = "pyrogram.session"
             sestxt = "pyrogram.txt"
         elif createbot == 2:
             bot_token = os.getenv("BOT_TOKEN") or input("Insert bot token: ")
             app = pyrogram.Client(
-                "bot", api_id=api_id, api_hash=app_hash, bot_token=bot_token, phone_number=phone
+                "bot",
+                api_id=api_id,
+                api_hash=app_hash,
+                bot_token=bot_token,
+                phone_number=phone,
             )
             ses = "bot.session"
             sestxt = "bot.txt"

@@ -49,8 +49,11 @@ async def check_channel_existence(channels: list[str]):
     filtered = []
     _channels = channels
     for ch in range(0, len(channels), 200):
-        u = await userbot.get_users(user_ids=_channels[ch])
-        filtered.extend(map(lambda x: x.username, u))
+        try:
+            u = await userbot.get_users(user_ids=_channels[ch])
+            filtered.extend(map(lambda x: x.username, u))
+        except Exception as e:
+            return _channels
     if len(filtered) < 1:
         return _channels
     return filtered
@@ -79,6 +82,7 @@ async def search_handler(user: types.User, queries: list[list], limit=100):
             chat_id=user.id,
         ):
             _q = _queries[q]
+            logger.debug(f"{q}query: {_q}")
             try:
                 _lyzem_channels = search_channels_lyzem(driver, solver, _q, limit=limit)
                 lyzem_channels = await check_channel_existence(_lyzem_channels)
@@ -100,16 +104,16 @@ async def search_handler(user: types.User, queries: list[list], limit=100):
                 #     }
                 # )
             except Exception as e:
-                logger.error(e)
-            logger.debug(
-                f"{_q}; lyzem_channels: {len(search_results.get('lyzem'))},"
-                f" telegago_channels: {len(search_results.get('telegago'))}"
-            )
+                logger.error(f"{q} - {e}")
+            search_results_count = sum([len(x) for x in search_results.values()])
+            logger.debug(f"{q} - search_results: {search_results_count}")
+            logger.info({q: {_q: search_results_count}})
     except Exception as e:
         logger.error(e)
         raise e
     except TelegramBadRequest:
         pass
     finally:
+        logger.info("End")
         driver.quit()
     return search_results
