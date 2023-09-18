@@ -19,12 +19,17 @@ async def start_userbot_client(account: dict):
     p = destination.joinpath("pyrogram_account.json")
     p.open("w").write(json.dumps(account, indent=2))
 
-    userbot.api_id = account.get("api_id")
-    userbot.api_hash = account.get("api_hash")
-    userbot.phone_number = account.get("phone_number")
+    session_string_p = destination.joinpath("pyrogram.txt")
+    if session_string_p.exists():
+        userbot.session_string = session_string_p.open("r").read().strip()
+        userbot.in_memory = True
+    else:
+        userbot.api_id = account.get("api_id")
+        userbot.api_hash = account.get("api_hash")
+        userbot.phone_number = account.get("phone_number")
     await userbot.start()
     session = await userbot.export_session_string()
-    destination.joinpath("pyrogram.txt").open("w").write(session)
+    session_string_p.open("w").write(session)
 
 
 @router.message(Command("start_userbot"))
@@ -70,7 +75,6 @@ async def upload_session_state(message: types.Message, state: FSMContext):
         "api_hash": data[1],
         "phone_number": data[2],
     }
-
     try:
         await start_userbot_client(account)
         await bot.download(
