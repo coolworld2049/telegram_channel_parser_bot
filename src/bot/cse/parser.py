@@ -186,7 +186,8 @@ def search_channels_telegago(driver, solver, query: str, limit=100):
 
 if __name__ == "__main__":
     driver = webdriver.Remote(
-        command_executor=get_settings().SE_WEBDRIVER_URL, options=chrome_options
+        command_executor=get_settings().SE_WEBDRIVER_URL + "/wd/hub",
+        options=chrome_options,
     )
     solver = RecaptchaSolver(driver=driver)
     print("search_channels_lyzem")

@@ -26,7 +26,7 @@ class UserBotSettings(BaseSettings):
 
 
 class SeleniumSettings(BaseSettings):
-    SE_WEBDRIVER_URL: str = "http://localhost:4444/wd/hub"
+    SE_WEBDRIVER_URL: str = "http://localhost:4444"
 
 
 class BotRedisSettings(BaseSettings):
