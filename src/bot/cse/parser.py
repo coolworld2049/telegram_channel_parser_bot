@@ -115,7 +115,7 @@ def search_channels_lyzem(driver, solver, query: str, limit=100):
                 all_channels.append(channel)
         if len(all_channels) >= limit:
             return all_channels[:limit]
-    logger.info({query: all_channels})
+    logger.debug({query: all_channels})
     return all_channels
 
 
@@ -181,7 +181,7 @@ def search_channels_telegago(driver, solver, query: str, limit=100):
                 all_channels.append(channel)
         if len(all_channels) >= limit:
             return all_channels[:limit]
-    logger.info({query: all_channels})
+    logger.debug({query: all_channels})
     return all_channels
 
 

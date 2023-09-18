@@ -69,8 +69,8 @@ async def start_searching(
         query.from_user, search_queries, limit=state_data.get("limit") or 100
     )
     channels = []
-    if len(_channels) > 0:
-        logger.error("Channels are empty")
+    if not len(_channels) > 0:
+        await bot.send_message("No channels found")
         return None
     for ch in list(_channels.values()):
         if len(ch) > 0:
@@ -84,11 +84,16 @@ async def start_searching(
         "input.txt",
     )
     output_txt = BufferedInputFile("\n".join(channels).encode("utf-8"), "output.txt")
+    usernames_txt = BufferedInputFile(
+        "\n".join(map(lambda x: x.split("/")[-1], channels)).encode("utf-8"),
+        "usernames.txt",
+    )
     await bot.send_media_group(
         query.from_user.id,
         media=[
             InputMediaDocument(media=input_txt),
-            InputMediaDocument(media=output_txt, caption=caption),
+            InputMediaDocument(media=output_txt),
+            InputMediaDocument(media=usernames_txt, caption=caption),
         ],
     )
     await bot.send_message(query.from_user.id, caption + details)
