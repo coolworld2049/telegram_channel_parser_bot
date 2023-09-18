@@ -3,17 +3,21 @@ from typing import List
 
 from loguru import logger
 
-from userbot.schemas.search import SearchQuery
+from bot.schemas.search import SearchQuery
 
 
-def generate_search_queries(level1: List[str], level2: List[str], level3: List[str]):
-    if level1 is None:
-        level1 = []
-    if level2 is None:
-        level2 = []
-    if level3 is None:
-        level3 = []
-
+def generate_search_queries(*levels: list):
+    if len(levels) < 1:
+        return None
+    level1 = []
+    level2 = []
+    level3 = []
+    try:
+        level1 = levels[0]
+        level2 = levels[1]
+        level3 = levels[2]
+    except:
+        pass
     # Rule 1: Generate queries with only level 1 keywords
     if len(level1) > 0:
         for country in level1:

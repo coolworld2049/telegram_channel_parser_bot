@@ -9,37 +9,29 @@ services:
     env_file:
       - ./.env
     environment:
-      - USERBOT_API_BASE_URL=http://userbot:8000
       - REDIS_MASTER_HOST=redis
     depends_on:
-      - userbot
+      - selenium
       - redis
     restart: always
     volumes:
       - ./src/core:/app/core
       - ./src/bot:/app/bot
+  selenium:
+    image: selenium/standalone-chrome
+    ports:
+      - "4444:4444"
+    environment:
+      - SE_SESSION_REQUEST_TIMEOUT=600
+      - SE_SESSION_RETRY_INTERVAL=2
+      - SE_NODE_SESSION_TIMEOUT=600
+      - SE_NODE_MAX_SESSIONS=10
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+      - START_XVFB=false
+    shm_size: '4g'
   redis:
     image: redis/redis-stack-server:latest
     hostname: redis
     ports:
       - "6379:6379"
     restart: always
-  userbot:
-    build:
-      context: src
-      dockerfile: userbot.dockerfile
-    hostname: userbot
-    env_file:
-      - ./.env
-    environment:
-      - HOST=0.0.0.0
-      - PORT=8000
-      - BACKEND_CORS_ORIGINS=["http://0.0.0.0"]
-    ports:
-      - "8000:8000"
-    depends_on:
-      - redis
-    restart: always
-    volumes:
-      - ./src/core:/app/core
-      - ./src/userbot:/app/userbot
