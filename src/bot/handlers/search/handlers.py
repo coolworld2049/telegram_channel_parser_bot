@@ -1,7 +1,5 @@
-import json
 from contextlib import suppress
 
-import aiohttp
 from aiogram import Router, types, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
@@ -10,6 +8,7 @@ from aiogram.types import BufferedInputFile, InputMediaDocument, User
 from loguru import logger
 
 from bot.callbacks import MenuCallback
+from bot.cse.main import search_handler, get_search_queries
 from bot.keyboards.search import search_keyboard_builder
 from bot.loader import bot
 from bot.states import SearchState
@@ -20,24 +19,36 @@ router = Router(name=__file__)
 
 async def start_search_handler(user: User, state: FSMContext, message_id: int = None):
     with suppress(TelegramBadRequest, TypeError):
-        for i in range(message_id - 2, message_id):
-            await bot.delete_message(user.id, i)
+        await bot.delete_message(user.id, message_id - 1)
+        await bot.delete_message(user.id, message_id)
     state_data = await state.get_data()
     search_queries = state_data.get("search_queries") or []
+    limit_per_query = state_data.get("limit") or 100
     search_queries_str = [", ".join(x) for i, x in enumerate(search_queries)]
     search_queries_text = str()
+    generated_search_queries = list(get_search_queries(search_queries))
     for i, x in enumerate(search_queries):
-        search_queries_text += f"<code>{i}</code>  -  <code>{','.join(x)}</code>\n"
+        search_queries_text += f"<code>{i} - {','.join(x)}</code>\n"
     await state.update_data(search_queries=search_queries)
     await bot.send_message(
         user.id,
-        f"<b>Search Menu</b>\n\n{search_queries_text}",
+        (
+            f"<b>Search Menu</b>\n"
+            f"query count - <code>{len(generated_search_queries)}</code>\n"
+            f"limit per query - <code>{limit_per_query}</code>"
+            f"\n\n{search_queries_text}"
+        ),
         reply_markup=search_keyboard_builder().as_markup(),
     )
 
 
 @router.message(Command("search"))
 async def start_search_message(message: types.Message, state: FSMContext):
+    if (
+        message.from_user.id not in get_settings().BOT_ACL
+        and get_settings().BOT_ACL_ENABLED
+    ):
+        return None
     await message.delete()
     await start_search_handler(message.from_user, state, message.message_id)
 
@@ -47,7 +58,52 @@ async def start_searching(
     query: types.CallbackQuery, callback_data: MenuCallback, state: FSMContext
 ):
     state_data = await state.get_data()
-    await search_handler(query.from_user, state_data.get("search_queries"))
+    search_queries = state_data.get("search_queries")
+    if not search_queries:
+        await query.answer("Search queries are empty")
+        return None
+    logger.debug(search_queries)
+    _channels = await search_handler(
+        query.from_user, search_queries, limit=state_data.get("limit") or 100
+    )
+    channels = []
+    for ch in list(_channels.values()):
+        if len(ch) > 0:
+            channels.extend(ch)
+    caption = (
+        f"query - <code>{' | '.join(list(map(lambda x: x[0], search_queries)))}</code>"
+    )
+    details = f"\nchannels: {len(channels)}"
+    input_txt = BufferedInputFile(
+        "\n".join(list(map(lambda x: ", ".join(x), search_queries))).encode("utf-8"),
+        "input.txt",
+    )
+    output_txt = BufferedInputFile("\n".join(channels).encode("utf-8"), "output.txt")
+    await bot.send_media_group(
+        query.from_user.id,
+        media=[
+            InputMediaDocument(media=input_txt),
+            InputMediaDocument(media=output_txt, caption=caption),
+        ],
+    )
+    await bot.send_message(query.from_user.id, caption + details)
+
+
+@router.callback_query(MenuCallback.filter(F.name == "change-search-limit"))
+async def change_search_limit(
+    query: types.CallbackQuery, callback_data: MenuCallback, state: FSMContext
+):
+    await query.answer("Enter a limit per query")
+    await state.set_state(SearchState.change_limit)
+
+
+@router.message(SearchState.change_limit)
+async def change_search_limit_state(message: types.Message, state: FSMContext):
+    try:
+        await state.update_data(limit=int(message.text))
+    except Exception as e:
+        await message.answer("Limit must be an integer")
+    await start_search_handler(message.from_user, state, message.message_id)
 
 
 @router.callback_query(MenuCallback.filter(F.name == "extend-search-queries"))
@@ -94,6 +150,7 @@ async def delete_search_query_state(message: types.Message, state: FSMContext):
         await state.update_data(search_queries=search_queries)
     except Exception as e:
         await message.answer(f"Exception: {e}")
+    await start_search_handler(message.from_user, state, message.message_id)
 
 
 @router.callback_query(MenuCallback.filter(F.name == "replace-search-query"))
@@ -133,51 +190,3 @@ async def clean_search_queries(
     await query.message.delete()
     await state.clear()
     await start_search_handler(query.from_user, state)
-
-
-async def search_handler(user: types.User, search_queries: list[list]):
-    print()
-    payload: dict[str, list] = {}
-    for i in range(3):
-        payload.setdefault(f"level{i + 1}", [""])
-    for i, x in enumerate(search_queries):
-        i += 1
-        if i == 4:
-            p = payload.get(f"level{i - 1}")
-            p.append({f"level{i - 1}": x})
-            payload.update({f"level{i - 1}": p})
-        else:
-            payload.update({f"level{i}": x})
-    caption = (
-        f"\n\n<code>{' | '.join(list(map(lambda x: x[0], payload.values())))}</code>"
-    )
-    await bot.send_message(user.id, "Wait. It will take some time")
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            f"{get_settings().USERBOT_API_BASE_URL}/telegram/telethon_search",
-            json=payload,
-        ) as response:
-            data = await response.json()
-            if response.status != 200:
-                logger.error(data)
-                await bot.send_message(user.id, str(data))
-            unique_usernames = set(map(lambda it: it["username"], data))
-            links = set(map(lambda c: f"https://t.me/{c}", unique_usernames))
-            input_query_json = BufferedInputFile(
-                json.dumps(payload, indent=2, ensure_ascii=True).encode("utf-8"),
-                "input.json",
-            )
-            result_json = BufferedInputFile(
-                json.dumps(data, indent=2, ensure_ascii=True).encode("utf-8"),
-                "output.json",
-            )
-            result_txt = BufferedInputFile(
-                "\n".join(links).encode("utf-8"), "links.txt"
-            )
-            await bot.send_media_group(
-                user.id,
-                media=[
-                    InputMediaDocument(media=result_json),
-                    InputMediaDocument(media=result_txt, caption=caption),
-                ],
-            )

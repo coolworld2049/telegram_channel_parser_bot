@@ -9,37 +9,46 @@ services:
     env_file:
       - ./.env
     environment:
-      - USERBOT_API_BASE_URL=http://userbot:8000
+      - SE_WEBDRIVER_URL=http://selenium-hub:4444
       - REDIS_MASTER_HOST=redis
     depends_on:
-      - userbot
+      - selenium-hub
       - redis
     restart: always
     volumes:
       - ./src/core:/app/core
       - ./src/bot:/app/bot
+  selenium-hub:
+    image: selenium/standalone-chrome
+    hostname: selenium-hub
+    ports:
+      - "4441-4444:4441-4444"
+    environment:
+      - SE_NODE_MAX_SESSIONS=3
+    #  - SE_SESSION_RETRY_INTERVAL=2
+    #  - SE_SESSION_REQUEST_TIMEOUT=600
+    #  - SE_NODE_SESSION_TIMEOUT=600
+    #  - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+    #  - START_XVFB=false
+    shm_size: '2g'
+    depends_on:
+      - chrome-node1
+      - chrome-node2
+  chrome-node1:
+    image: selenium/node-chrome
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4441
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4442
+  chrome-node2:
+    image: selenium/node-chrome
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
   redis:
     image: redis/redis-stack-server:latest
     hostname: redis
     ports:
       - "6379:6379"
     restart: always
-  userbot:
-    build:
-      context: src
-      dockerfile: userbot.dockerfile
-    hostname: userbot
-    env_file:
-      - ./.env
-    environment:
-      - HOST=0.0.0.0
-      - PORT=8000
-      - BACKEND_CORS_ORIGINS=["http://0.0.0.0"]
-    ports:
-      - "8000:8000"
-    depends_on:
-      - redis
-    restart: always
-    volumes:
-      - ./src/core:/app/core
-      - ./src/userbot:/app/userbot

@@ -1,9 +1,8 @@
 from functools import lru_cache
-from typing import Optional, Union, List
+from typing import Optional
 
 from aiogram.types import BotCommand
 from dotenv import load_dotenv
-from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings
 
 load_dotenv()
@@ -13,29 +12,21 @@ class BotSettings(BaseSettings):
     BOT_TOKEN: str
     BOT_COMMANDS: list[BotCommand] = [
         BotCommand(command="/start", description="Start bot"),
-        BotCommand(command="/auth", description="Log in telegram account"),
         BotCommand(
             command="/search", description="Search telegram channels by keywords"
         ),
     ]
-    USERBOT_API_BASE_URL: str = "http://127.0.0.1:8000"
+    BOT_ACL: list[int] = []
+    BOT_ACL_ENABLED: bool = False
 
 
 class UserBotSettings(BaseSettings):
     API_ID: int
     API_HASH: str
-    PHONE_NUMBER: str
-    HOST: str = "127.0.0.1"
-    PORT: int = 8000
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = ["http://127.0.0.1"]
 
-    @field_validator("BACKEND_CORS_ORIGINS")
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
-        elif isinstance(v, (list, str)):
-            return v
-        raise ValueError(v)
+
+class SeleniumSettings(BaseSettings):
+    SE_WEBDRIVER_URL: str = "http://localhost:4444"
 
 
 class BotRedisSettings(BaseSettings):
@@ -54,7 +45,7 @@ class BotRedisSettings(BaseSettings):
         return f"redis://{password}{self.REDIS_MASTER_HOST}:{self.REDIS_MASTER_PORT_NUMBER}/0"
 
 
-class Settings(BotSettings, BotRedisSettings, UserBotSettings):
+class Settings(BotSettings, BotRedisSettings, SeleniumSettings):
     pass
 
 
