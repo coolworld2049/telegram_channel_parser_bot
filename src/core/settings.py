@@ -17,6 +17,7 @@ class BotSettings(BaseSettings):
             command="/search", description="Search telegram channels by keywords"
         ),
         BotCommand(command="/set_session", description="Set pyrogram session"),
+        BotCommand(command="/start_userbot", description="Start userbot"),
     ]
     BOT_ACL: list[int] = []
     BOT_ACL_ENABLED: bool = False

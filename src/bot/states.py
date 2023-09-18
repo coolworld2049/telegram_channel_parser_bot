@@ -9,5 +9,5 @@ class SearchState(StatesGroup):
 
 
 class SessionState(StatesGroup):
-    set = State()
-    enter_code = State()
+    set_creds = State()
+    upload_session = State()

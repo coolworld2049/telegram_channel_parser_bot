@@ -49,6 +49,7 @@ async def start_search_message(message: types.Message, state: FSMContext):
         and get_settings().BOT_ACL_ENABLED
     ):
         return None
+    await state.clear()
     await message.delete()
     await start_search_handler(message.from_user, state, message.message_id)
 
@@ -61,6 +62,7 @@ async def start_searching(
     search_queries = state_data.get("search_queries")
     if not search_queries:
         await query.answer("Search queries are empty")
+        await state.clear()
         return None
     logger.debug(search_queries)
     _channels = await search_handler(
@@ -103,6 +105,7 @@ async def change_search_limit_state(message: types.Message, state: FSMContext):
         await state.update_data(limit=int(message.text))
     except Exception as e:
         await message.answer("Limit must be an integer")
+        await state.clear()
     await start_search_handler(message.from_user, state, message.message_id)
 
 
@@ -137,6 +140,7 @@ async def delete_search_query(
         await state.set_state(SearchState.delete)
     else:
         await query.answer("The list of keywords is empty!")
+        await state.clear()
 
 
 @router.message(SearchState.delete)
@@ -150,6 +154,7 @@ async def delete_search_query_state(message: types.Message, state: FSMContext):
         await state.update_data(search_queries=search_queries)
     except Exception as e:
         await message.answer(f"Exception: {e}")
+        await state.clear()
     await start_search_handler(message.from_user, state, message.message_id)
 
 
@@ -165,6 +170,7 @@ async def replace_search_query(
         )
         await state.set_state(SearchState.replace)
     else:
+        await state.clear()
         await query.answer("The list of keywords is empty!")
 
 
@@ -180,6 +186,7 @@ async def replace_search_query_state(message: types.Message, state: FSMContext):
         await state.update_data(search_queries=search_queries)
     except Exception as e:
         await message.answer(f"Exception: {e}")
+        await state.clear()
     await start_search_handler(message.from_user, state, message.message_id)
 
 
