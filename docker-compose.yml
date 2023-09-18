@@ -21,12 +21,16 @@ services:
   redis:
     image: redis/redis-stack-server:latest
     hostname: redis
+    env_file:
+      - ./.env
     ports:
       - ${REDIS_MASTER_PORT_NUMBER}:6379
     restart: always
   standalone-chrome:
     image: selenium/standalone-chrome
     hostname: standalone-chrome
+    env_file:
+      - ./.env
     environment:
       - SE_NODE_MAX_SESSIONS=3
     ports:
