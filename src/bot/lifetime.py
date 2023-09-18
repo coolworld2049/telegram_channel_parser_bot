@@ -3,7 +3,8 @@ from loguru import logger
 
 from core.settings import get_settings
 from handlers import main
-from loader import bot, userbot
+from loader import bot
+from bot.userbot import userbot
 
 
 async def startup_bot(dp: Dispatcher) -> None:

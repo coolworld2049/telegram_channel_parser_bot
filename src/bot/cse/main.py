@@ -11,7 +11,8 @@ from selenium_recaptcha_solver import RecaptchaSolver
 from tqdm.contrib.telegram import trange
 
 from bot.cse.parser import search_channels_lyzem, search_channels_telegago
-from bot.loader import chrome_options, user_agent, bot, userbot
+from bot.loader import chrome_options, user_agent, bot
+from bot.userbot import userbot
 from bot.search_query_builder.main import generate_search_queries
 from core.settings import get_settings
 

@@ -1,4 +1,3 @@
-import pyrogram
 from aiogram import Bot
 from fake_useragent import UserAgent
 from redis.asyncio import Redis
@@ -10,7 +9,7 @@ redis = Redis.from_url(get_settings().redis_url)
 
 bot = Bot(get_settings().BOT_TOKEN, parse_mode="HTML")
 
-userbot = pyrogram.Client("pyrogram")
+
 user_agent = UserAgent()
 
 chrome_options = Options()

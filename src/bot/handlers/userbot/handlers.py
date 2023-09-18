@@ -5,8 +5,10 @@ from aiogram import Router, types, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
+import bot.userbot
 from bot.handlers.search.handlers import start_search_handler
-from bot.loader import bot, userbot
+from bot.loader import bot
+from bot.userbot import userbot
 from bot.states import SessionState
 from core.settings import get_settings
 
@@ -21,7 +23,7 @@ async def start_userbot_client(account: dict):
 
     session_string_p = destination.joinpath("pyrogram.txt")
     if session_string_p.exists():
-        userbot.session_string = session_string_p.open("r").read().strip()
+        bot.userbot.session_string = session_string_p.open("r").read().strip()
         userbot.in_memory = True
     else:
         userbot.api_id = account.get("api_id")
