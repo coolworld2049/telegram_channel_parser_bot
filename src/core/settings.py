@@ -1,4 +1,3 @@
-import pathlib
 from functools import lru_cache
 from typing import Optional
 
@@ -23,25 +22,6 @@ class BotSettings(BaseSettings):
     BOT_ACL_ENABLED: bool = False
 
 
-class UserBotSettings(BaseSettings):
-    API_ID: int = None
-    API_HASH: str = None
-    PHONE_NUMBER: str = None
-    SESSION_STRING_FILE: str = "bot/pyrogram.txt"
-
-    @property
-    def session_string(self):
-        try:
-            return (
-                pathlib.Path(__file__)
-                .parent.parent.joinpath(pathlib.Path(self.SESSION_STRING_FILE))
-                .open("r")
-                .readline()
-            )
-        except FileNotFoundError:
-            return None
-
-
 class SeleniumSettings(BaseSettings):
     SE_WEBDRIVER_URL: str = "http://localhost:4444"
 
@@ -62,7 +42,7 @@ class BotRedisSettings(BaseSettings):
         return f"redis://{password}{self.REDIS_MASTER_HOST}:{self.REDIS_MASTER_PORT_NUMBER}/0"
 
 
-class Settings(BotSettings, BotRedisSettings, UserBotSettings, SeleniumSettings):
+class Settings(BotSettings, BotRedisSettings, SeleniumSettings):
     LOG_LEVEL: str = "INFO"
 
 
