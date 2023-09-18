@@ -10,7 +10,7 @@ from selenium import webdriver
 from selenium_recaptcha_solver import RecaptchaSolver
 from tqdm.contrib.telegram import trange
 
-from bot.cse.parser import search_channels_lyzem
+from bot.cse.parser import search_channels_lyzem, search_channels_telegago
 from bot.loader import chrome_options, user_agent, bot, userbot
 from bot.search_query_builder.main import generate_search_queries
 from core.settings import get_settings
@@ -71,32 +71,38 @@ async def check_channel_existence(index, channels: list[str]):
     return filtered
 
 
-def log_search_results(index, query, search_results_count, channels):
+def pre_log_search_results(index, query):
+    log_data = {index: query}
+    logger.info(log_data)
+
+
+def post_log_search_results(
+    index, query, search_results_count, search_results: list[str]
+):
     log_data = {
         index: {
             query: [
                 {
                     "count": search_results_count,
-                    "channels": channels,
+                    "channels": search_results,
                 }
             ]
         }
     }
-
-    logger.info(log_data)
+    logger.info(json.dumps(log_data, indent=2, ensure_ascii=False))
 
 
 async def search_handler(user: types.User, queries: list[list], limit=100):
+    search_results = {}
+    search_results.setdefault("telegago", set())
+    search_results.setdefault("lyzem", set())
     selenium_clots = await get_slots_with_sessions()
     if len(selenium_clots) > 2:
         await bot.send_message(
             user.id, "Wait for the previous selenium session to complete"
         )
-        return None
+        return search_results
     await asyncio.sleep(random.randint(1, 2) / 10)
-    search_results = {}
-    search_results.setdefault("telegago", set())
-    search_results.setdefault("lyzem", set())
     _queries = get_search_queries(queries)
     chrome_options.add_argument(f"--user-agent={user_agent.random}")
     driver = webdriver.Remote(
@@ -113,27 +119,42 @@ async def search_handler(user: types.User, queries: list[list], limit=100):
         ):
             _q = _queries[q]
             try:
-                _lyzem_channels = search_channels_lyzem(driver, solver, _q, limit=limit)
+                pre_log_search_results(q, _q)
+                logger.info("Lyzem...")
+                _lyzem_channels = search_channels_lyzem(
+                    driver,
+                    solver,
+                    _q,
+                    limit,
+                )
                 _lyzem_channels = {f"https://t.me/{x}" for x in _lyzem_channels}
-                search_results_count = sum([len(x) for x in search_results.values()])
-                if search_results_count:
-                    search_results_count = len(_lyzem_channels)
-                log_search_results(q, _q, search_results_count, _lyzem_channels)
-
                 lyzem_channels = await check_channel_existence(q, list(_lyzem_channels))
                 search_results.update(
                     {"lyzem": search_results.get("lyzem").union(lyzem_channels)}
                 )
-                # _telegago_channels = search_channels_telegago(
-                #     driver, solver, _q, limit=limit
-                # )
-                # _telegago_channels = {f"https://t.me/{x}" for x in _telegago_channels}
-                # telegago_channels = await check_channel_existence(list(_telegago_channels))
-                # search_results.update(
-                #     {
-                #         "telegago": search_results.get("telegago").union(telegago_channels)
-                #     }
-                # )
+                search_results_count = sum([len(x) for x in search_results.values()])
+                post_log_search_results(q, _q, search_results_count, lyzem_channels)
+
+                logger.info("Telegago...")
+                _telegago_channels = search_channels_telegago(
+                    driver,
+                    solver,
+                    _q,
+                    limit,
+                )
+                _telegago_channels = {f"https://t.me/{x}" for x in _telegago_channels}
+                telegago_channels = await check_channel_existence(
+                    q, list(_telegago_channels)
+                )
+                search_results.update(
+                    {
+                        "telegago": search_results.get("telegago").union(
+                            telegago_channels
+                        )
+                    }
+                )
+                search_results_count = sum([len(x) for x in search_results.values()])
+                post_log_search_results(q, _q, search_results_count, telegago_channels)
             except Exception as e:
                 logger.error(f"{q} - {e}")
     except Exception as e:

@@ -9,10 +9,7 @@ from lifetime import startup_bot, shutdown_bot
 from loader import bot
 
 logger.remove()
-logger.add(
-    sys.stdout,
-    level=get_settings().LOG_LEVEL,
-)
+logger.add(sys.stdout, level=get_settings().LOG_LEVEL)
 logger.add(
     ".logs/access.log",
     level=get_settings().LOG_LEVEL,

@@ -69,6 +69,9 @@ async def start_searching(
         query.from_user, search_queries, limit=state_data.get("limit") or 100
     )
     channels = []
+    if len(_channels) > 0:
+        logger.error("Channels are empty")
+        return None
     for ch in list(_channels.values()):
         if len(ch) > 0:
             channels.extend(ch)
@@ -122,7 +125,7 @@ async def extend_search_queries_state(message: types.Message, state: FSMContext)
     with suppress(TelegramBadRequest):
         await bot.delete_message(message.from_user.id, message.message_id - 1)
     state_data = await state.get_data()
-    search_queries: list[list] = state_data.get("search_queries")
+    search_queries: list[list] = state_data.get("search_queries") or []
     new_search_queries = [s.strip() for s in message.text.split(",")]
     search_queries.append(new_search_queries)
     await state.update_data(search_queries=search_queries)

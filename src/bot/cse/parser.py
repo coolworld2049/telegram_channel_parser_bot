@@ -36,7 +36,7 @@ def extract_html(driver, solver, url):
     # Set up Chrome options for headless browsing
     try:
         logger.debug(f"Goto: {url}")
-        delay = random.randint(4, random.randint(8, 12)) / 10
+        delay = random.randint(4, random.randint(8, 15)) / 10
         logger.debug(f"delay {delay} sec")
         time.sleep(delay)
         driver.get(url=url)
@@ -49,6 +49,7 @@ def extract_html(driver, solver, url):
             logger.warning(f"reCAPTCHA {recaptcha_iframe}")
             solver.click_recaptcha_v2(iframe=recaptcha_iframe)
             logger.info("reCAPTCHA solved")
+            time.sleep(random.randint(2, 4) / 10)
             driver.get(url=url)
         except NoSuchElementException as e:
             pass
@@ -67,7 +68,7 @@ def parse_lyzem_page(html):
         try:
             element_classes = link["class"]
             # if they have this element this means the result is an advertisement
-            # we dont want these
+            # we don't want these
             if "ann" in element_classes:
                 continue
             path_url = link.find_next("a").get("href")
@@ -114,7 +115,7 @@ def search_channels_lyzem(driver, solver, query: str, limit=100):
                 all_channels.append(channel)
         if len(all_channels) >= limit:
             return all_channels[:limit]
-        logger.info({i: {request_url: all_channels}})
+    logger.info({query: all_channels})
     return all_channels
 
 
@@ -180,6 +181,7 @@ def search_channels_telegago(driver, solver, query: str, limit=100):
                 all_channels.append(channel)
         if len(all_channels) >= limit:
             return all_channels[:limit]
+    logger.info({query: all_channels})
     return all_channels
 
 
