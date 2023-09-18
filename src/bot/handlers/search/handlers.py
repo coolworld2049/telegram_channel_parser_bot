@@ -12,6 +12,7 @@ from bot.cse.main import search_handler, get_search_queries
 from bot.keyboards.search import search_keyboard_builder
 from bot.loader import bot
 from bot.states import SearchState
+from core.settings import get_settings
 
 router = Router(name=__file__)
 
@@ -21,8 +22,8 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
         await bot.delete_message(user.id, message_id - 1)
         await bot.delete_message(user.id, message_id)
     state_data = await state.get_data()
-    limit = state_data.get("limit") or 100
     search_queries = state_data.get("search_queries") or []
+    limit_per_query = state_data.get("limit") or 100
     search_queries_str = [", ".join(x) for i, x in enumerate(search_queries)]
     search_queries_text = str()
     generated_search_queries = list(get_search_queries(search_queries))
@@ -34,7 +35,7 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
         (
             f"<b>Search Menu</b>\n"
             f"query count - <code>{len(generated_search_queries)}</code>\n"
-            f"limit per query - <code>{limit}</code>"
+            f"limit per query - <code>{limit_per_query}</code>"
             f"\n\n{search_queries_text}"
         ),
         reply_markup=search_keyboard_builder().as_markup(),
@@ -43,6 +44,11 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
 
 @router.message(Command("search"))
 async def start_search_message(message: types.Message, state: FSMContext):
+    if (
+        message.from_user.id not in get_settings().BOT_ACL
+        and get_settings().BOT_ACL_ENABLED
+    ):
+        return None
     await message.delete()
     await start_search_handler(message.from_user, state, message.message_id)
 
@@ -55,6 +61,7 @@ async def start_searching(
     search_queries = state_data.get("search_queries")
     if not search_queries:
         await query.answer("Search queries are empty")
+        return None
     logger.debug(search_queries)
     _channels = await search_handler(
         query.from_user, search_queries, limit=state_data.get("limit") or 100
@@ -64,7 +71,6 @@ async def start_searching(
         if len(ch) > 0:
             channels.extend(ch)
     caption = (
-        f"limit per query - <code>{state_data.get('limit')}</code>\n"
         f"query - <code>{' | '.join(list(map(lambda x: x[0], search_queries)))}</code>"
     )
     details = f"\nchannels: {len(channels)}"

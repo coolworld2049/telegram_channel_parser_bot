@@ -6,7 +6,13 @@ from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 from loguru import logger
+from selenium import webdriver
+from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
+from selenium_recaptcha_solver import RecaptchaSolver
+
+from bot.loader import chrome_options
+from core.settings import get_settings
 
 TELEGAGO_BASE_URL = "https://cse.google.com/cse?q=+&cx=006368593537057042503:efxu7xprihg#gsc.tab=0&gsc.ref=more%3Apublic&gsc.q="
 LYZEM_BASE_URL = "https://lyzem.com/search?f=channels&l=%3Aen&per-page=100&q="
@@ -31,20 +37,23 @@ def extract_html(driver, solver, url):
     try:
         logger.debug(f"Goto: {url}")
         # Navigate to the URL
-        time.sleep(random.randint(10, random.randint(20, 50)) / 10)
+        delay = random.randint(5, random.randint(10, 30)) / 10
+        logger.info(f"delay: {delay} sec")
+        time.sleep(delay)
         driver.get(url=url)
         try:
             recaptcha_iframe = driver.find_element(
                 By.XPATH, '//iframe[@title="reCAPTCHA"]'
             )
+            logger.warning(f"reCAPTCHA - {recaptcha_iframe}")
             solver.click_recaptcha_v2(iframe=recaptcha_iframe)
-            logger.info("reCAPTCHA: click_recaptcha_v2")
-        except:
-            pass
-
+            logger.info("reCAPTCHA solved")
+            driver.get(url=url)
+        except NoSuchElementException as e:
+            logger.info(e.msg)
         # Get the page's HTML source after JavaScript execution
         source_html = driver.page_source
-
+        logger.debug(f"'t.me' in source_html: {'t.me' in source_html}")
         return source_html
     except Exception as e:
         logger.error(f"An error occurred: {e}")
@@ -75,6 +84,7 @@ def parse_lyzem_page(html):
 def search_channels_lyzem(driver, solver, query: str, limit=100):
     initial_request_url = LYZEM_BASE_URL + urllib.parse.quote(query)
     # logger.debug("Lyzem request url {}".format(initial_request_url))
+    logger.debug(f"Lyzem initial request url {initial_request_url}")
 
     # extract channels from initial page
     source_html = extract_html(driver, solver, initial_request_url)
@@ -137,7 +147,7 @@ def parse_telegago_page(html):
 
 def search_channels_telegago(driver, solver, query: str, limit=100):
     initial_request_url = TELEGAGO_BASE_URL + urllib.parse.quote(query)
-    # logger.debug("Telegago request url {}".format(initial_request_url))
+    logger.debug("Telegago initial request url {}".format(initial_request_url))
 
     # extract channels from initial page
     source_html = extract_html(driver, solver, initial_request_url)
@@ -160,7 +170,7 @@ def search_channels_telegago(driver, solver, query: str, limit=100):
 
     # then iterate over all pages to extract all channels
     for i in range(num_pages):
-        request_url = initial_request_url + "&gsc.page=" + str(i + 1) + "&gsc.sort="
+        request_url = initial_request_url + "&gsc.page=" + str(i + 1) + "&gsc.sort=date"
         logger.debug(
             f"Telegago request url {request_url}; Channels: {len(all_channels)}"
         )
@@ -175,10 +185,14 @@ def search_channels_telegago(driver, solver, query: str, limit=100):
 
 
 if __name__ == "__main__":
-    # print("search_channels_lyzem")
-    # res = search_channels_lyzem("Чат южная корея")
-    # pprint(res)
+    driver = webdriver.Remote(
+        command_executor=get_settings().SE_WEBDRIVER_URL, options=chrome_options
+    )
+    solver = RecaptchaSolver(driver=driver)
+    print("search_channels_lyzem")
+    res = search_channels_lyzem(driver, solver, "Чат южная корея")
+    pprint(res)
 
     print("search_channels_telegago")
-    res = search_channels_telegago("Чат южная корея")
+    res = search_channels_telegago(driver, solver, "Чат южная корея")
     pprint(res)
