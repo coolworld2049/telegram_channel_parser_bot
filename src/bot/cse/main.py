@@ -11,7 +11,7 @@ from selenium_recaptcha_solver import RecaptchaSolver
 from tqdm.contrib.telegram import trange
 
 from bot.cse.parser import search_channels_lyzem
-from bot.loader import chrome_options, user_agent, bot
+from bot.loader import chrome_options, user_agent, bot, userbot
 from bot.search_query_builder.main import generate_search_queries
 from core.settings import get_settings
 
@@ -45,6 +45,17 @@ async def get_slots_with_sessions():
                 return []
 
 
+async def check_channel_existence(channels: list[str]):
+    filtered = []
+    _channels = channels
+    for ch in range(0, len(channels), 200):
+        u = await userbot.get_users(user_ids=_channels[ch])
+        filtered.extend(map(lambda x: x.username, u))
+    if len(filtered) < 1:
+        return _channels
+    return filtered
+
+
 async def search_handler(user: types.User, queries: list[list], limit=100):
     if len(await get_slots_with_sessions()) > 2:
         await bot.send_message(user.id, "Wait for previous requests to complete")
@@ -69,7 +80,8 @@ async def search_handler(user: types.User, queries: list[list], limit=100):
         ):
             _q = _queries[q]
             try:
-                lyzem_channels = search_channels_lyzem(driver, solver, _q, limit=limit)
+                _lyzem_channels = search_channels_lyzem(driver, solver, _q, limit=limit)
+                lyzem_channels = await check_channel_existence(_lyzem_channels)
                 search_results.update(
                     {
                         "lyzem": search_results.get("lyzem").union(

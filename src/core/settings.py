@@ -1,3 +1,4 @@
+import pathlib
 from functools import lru_cache
 from typing import Optional
 
@@ -21,8 +22,22 @@ class BotSettings(BaseSettings):
 
 
 class UserBotSettings(BaseSettings):
-    API_ID: int
-    API_HASH: str
+    API_ID: int = None
+    API_HASH: str = None
+    PHONE_NUMBER: str = None
+    SESSION_STRING_FILE: str = "my.txt"
+
+    @property
+    def session_string(self):
+        try:
+            return (
+                pathlib.Path(__file__)
+                .parent.joinpath(pathlib.Path(self.SESSION_STRING_FILE))
+                .open("r")
+                .readline()
+            )
+        except FileNotFoundError:
+            return None
 
 
 class SeleniumSettings(BaseSettings):
@@ -45,7 +60,7 @@ class BotRedisSettings(BaseSettings):
         return f"redis://{password}{self.REDIS_MASTER_HOST}:{self.REDIS_MASTER_PORT_NUMBER}/0"
 
 
-class Settings(BotSettings, BotRedisSettings, SeleniumSettings):
+class Settings(BotSettings, BotRedisSettings, UserBotSettings, SeleniumSettings):
     pass
 
 
