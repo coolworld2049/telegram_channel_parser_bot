@@ -8,12 +8,12 @@ from aiogram.types import User, Message, CallbackQuery, ErrorEvent
 from loguru import logger
 
 from bot.callbacks import MenuCallback
-from bot.handlers import search
+from bot.handlers import search, userbot
 from bot.loader import bot
 from bot.template_engine import render_template
 
 router = Router(name=__file__)
-router.include_routers(*[search.router])
+router.include_routers(*[search.router, userbot.router])
 
 
 @router.error(
@@ -25,7 +25,7 @@ async def handle_my_custom_exception(event: ErrorEvent, query: types.CallbackQue
 
 
 async def start_handler(user: User, state: FSMContext, message_id: int):
-    await state.clear()
+    # await state.clear()
     await bot.send_message(
         user.id,
         render_template(

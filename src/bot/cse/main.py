@@ -11,7 +11,7 @@ from selenium_recaptcha_solver import RecaptchaSolver
 from tqdm.contrib.telegram import trange
 
 from bot.cse.parser import search_channels_lyzem
-from bot.loader import chrome_options, user_agent, bot, userbot
+from bot.loader import chrome_options, user_agent, bot
 from bot.search_query_builder.main import generate_search_queries
 from core.settings import get_settings
 
@@ -23,8 +23,7 @@ def get_search_queries(queries: list[list]):
         if len(md) > 0:
             q = " ".join(md).strip(" ")
             new_search_queries.add(q)
-    new_search_queries = sorted(new_search_queries, key=lambda x: len(x))
-    return new_search_queries
+    return list(new_search_queries)
 
 
 async def get_slots_with_sessions():
@@ -50,13 +49,28 @@ async def check_channel_existence(channels: list[str]):
     _channels = channels
     for ch in range(0, len(channels), 200):
         try:
-            u = await userbot.get_users(user_ids=_channels[ch])
+            u = await bot.userbot.get_users(user_ids=_channels[ch])
             filtered.extend(map(lambda x: x.username, u))
         except Exception as e:
             return _channels
     if len(filtered) < 1:
         return _channels
     return filtered
+
+
+def log_search_results(index, query, search_results_count, channels):
+    log_data = {
+        index: {
+            query: [
+                {
+                    "count": search_results_count,
+                    "channels": channels,
+                }
+            ]
+        }
+    }
+
+    logger.info(log_data)
 
 
 async def search_handler(user: types.User, queries: list[list], limit=100):
@@ -82,38 +96,37 @@ async def search_handler(user: types.User, queries: list[list], limit=100):
             chat_id=user.id,
         ):
             _q = _queries[q]
-            logger.debug(f"{q}query: {_q}")
             try:
                 _lyzem_channels = search_channels_lyzem(driver, solver, _q, limit=limit)
-                lyzem_channels = await check_channel_existence(_lyzem_channels)
+                _lyzem_channels = {f"https://t.me/{x}" for x in _lyzem_channels}
+                search_results_count = sum([len(x) for x in search_results.values()])
+                if search_results_count:
+                    search_results_count = len(_lyzem_channels)
+                log_search_results(q, _q, search_results_count, _lyzem_channels)
+
+                lyzem_channels = await check_channel_existence(list(_lyzem_channels))
                 search_results.update(
-                    {
-                        "lyzem": search_results.get("lyzem").union(
-                            {f"https://t.me/{x}" for x in lyzem_channels}
-                        )
-                    }
+                    {"lyzem": search_results.get("lyzem").union(lyzem_channels)}
                 )
-                # telegago_channels = search_channels_telegago(
+                # _telegago_channels = search_channels_telegago(
                 #     driver, solver, _q, limit=limit
                 # )
+                # _telegago_channels = {f"https://t.me/{x}" for x in _telegago_channels}
+                # telegago_channels = await check_channel_existence(list(_telegago_channels))
                 # search_results.update(
                 #     {
-                #         "telegago": search_results.get("telegago").union(
-                #             {f"https://t.me/{x}" for x in telegago_channels}
-                #         )
+                #         "telegago": search_results.get("telegago").union(telegago_channels)
                 #     }
                 # )
             except Exception as e:
                 logger.error(f"{q} - {e}")
-            search_results_count = sum([len(x) for x in search_results.values()])
-            logger.debug(f"{q} - search_results: {search_results_count}")
-            logger.info({q: {_q: search_results_count}})
     except Exception as e:
         logger.error(e)
         raise e
     except TelegramBadRequest:
         pass
     finally:
+        logger.info(search_results)
         logger.info("End")
         driver.quit()
     return search_results

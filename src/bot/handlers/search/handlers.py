@@ -49,6 +49,7 @@ async def start_search_message(message: types.Message, state: FSMContext):
         and get_settings().BOT_ACL_ENABLED
     ):
         return None
+    await state.clear()
     await message.delete()
     await start_search_handler(message.from_user, state, message.message_id)
 

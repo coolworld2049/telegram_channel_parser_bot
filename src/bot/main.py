@@ -16,7 +16,7 @@ logger.add(
 logger.add(
     ".logs/access.log",
     level=get_settings().LOG_LEVEL,
-    serialize=True,
+    serialize=False,
     backtrace=True,
     encoding="utf-8",
     enqueue=True,

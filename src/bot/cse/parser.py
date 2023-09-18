@@ -35,7 +35,7 @@ LYZEM_BASE_URL = "https://lyzem.com/search?f=channels&l=%3Aen&per-page=100&q="
 def extract_html(driver, solver, url):
     # Set up Chrome options for headless browsing
     try:
-        logger.info(f"Goto: {url}")
+        logger.debug(f"Goto: {url}")
         delay = random.randint(5, random.randint(10, 30)) / 10
         logger.debug(f"delay {delay} sec")
         time.sleep(delay)
@@ -107,7 +107,6 @@ def search_channels_lyzem(driver, solver, query: str, limit=100):
     for i in range(num_pages):
         request_url = initial_request_url + "&p=" + str(i + 1)
         logger.debug(f"Lyzem request url {request_url}; Channels: {len(all_channels)}")
-        logger.info({request_url: all_channels})
         source_html = extract_html(driver, solver, request_url)
         page_channels = parse_lyzem_page(source_html)
         for channel in page_channels:
@@ -115,6 +114,7 @@ def search_channels_lyzem(driver, solver, query: str, limit=100):
                 all_channels.append(channel)
         if len(all_channels) >= limit:
             return all_channels[:limit]
+        logger.info({i: {request_url: all_channels}})
     return all_channels
 
 

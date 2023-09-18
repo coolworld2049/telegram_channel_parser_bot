@@ -1,3 +1,4 @@
+import pyrogram
 from aiogram import Bot
 from fake_useragent import UserAgent
 from pyrogram import Client
@@ -10,8 +11,11 @@ redis = Redis.from_url(get_settings().redis_url)
 
 bot = Bot(get_settings().BOT_TOKEN, parse_mode="HTML")
 
-userbot = Client(
-    "pyrogram", in_memory=True, session_string=get_settings().session_string
+userbot = pyrogram.Client(
+    "pyrogram",
+    api_id=get_settings().API_ID,
+    api_hash=get_settings().API_HASH,
+    phone_number=get_settings().PHONE_NUMBER,
 )
 
 user_agent = UserAgent()
