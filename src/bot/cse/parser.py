@@ -36,7 +36,7 @@ def extract_html(driver, solver, url):
     # Set up Chrome options for headless browsing
     try:
         logger.debug(f"Goto: {url}")
-        delay = random.randint(5, random.randint(10, 30)) / 10
+        delay = random.randint(4, random.randint(8, 12)) / 10
         logger.debug(f"delay {delay} sec")
         time.sleep(delay)
         driver.get(url=url)

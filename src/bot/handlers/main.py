@@ -25,7 +25,7 @@ async def handle_my_custom_exception(event: ErrorEvent, query: types.CallbackQue
 
 
 async def start_handler(user: User, state: FSMContext, message_id: int):
-    # await state.clear()
+    await state.clear()
     await bot.send_message(
         user.id,
         render_template(
