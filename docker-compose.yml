@@ -4,7 +4,7 @@ services:
   bot:
     build:
       context: src
-      dockerfile: src/Dockerfile
+      dockerfile: Dockerfile
     hostname: bot
     env_file:
       - ./.env
