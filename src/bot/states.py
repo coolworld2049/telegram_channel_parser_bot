@@ -6,3 +6,9 @@ class SearchState(StatesGroup):
     delete = State()
     replace = State()
     change_limit = State()
+
+
+class SessionState(StatesGroup):
+    set_creds = State()
+    send_code = State()
+    sign_in = State()

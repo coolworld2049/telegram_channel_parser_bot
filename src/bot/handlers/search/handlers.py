@@ -61,32 +61,39 @@ async def start_searching(
     search_queries = state_data.get("search_queries")
     if not search_queries:
         await query.answer("Search queries are empty")
+        await state.clear()
         return None
     logger.debug(search_queries)
-    _channels = await search_handler(
+    async for channels in search_handler(
         query.from_user, search_queries, limit=state_data.get("limit") or 100
-    )
-    channels = []
-    for ch in list(_channels.values()):
-        if len(ch) > 0:
-            channels.extend(ch)
-    caption = (
-        f"query - <code>{' | '.join(list(map(lambda x: x[0], search_queries)))}</code>"
-    )
-    details = f"\nchannels: {len(channels)}"
-    input_txt = BufferedInputFile(
-        "\n".join(list(map(lambda x: ", ".join(x), search_queries))).encode("utf-8"),
-        "input.txt",
-    )
-    output_txt = BufferedInputFile("\n".join(channels).encode("utf-8"), "output.txt")
-    await bot.send_media_group(
-        query.from_user.id,
-        media=[
-            InputMediaDocument(media=input_txt),
-            InputMediaDocument(media=output_txt, caption=caption),
-        ],
-    )
-    await bot.send_message(query.from_user.id, caption + details)
+    ):
+        if not len(channels) > 0:
+            await bot.send_message("No channels found")
+            return None
+        caption = f"query - <code>{' | '.join(list(map(lambda x: x[0], search_queries)))}</code>"
+        details = f"\nchannels: {len(channels)}"
+        input_txt = BufferedInputFile(
+            "\n".join(list(map(lambda x: ", ".join(x), search_queries))).encode(
+                "utf-8"
+            ),
+            "input.txt",
+        )
+        output_txt = BufferedInputFile(
+            "\n".join(channels).encode("utf-8"), "output.txt"
+        )
+        names_txt = BufferedInputFile(
+            "\n".join(map(lambda x: x.split("/")[-1], channels)).encode("utf-8"),
+            "names.txt",
+        )
+        await bot.send_media_group(
+            query.from_user.id,
+            media=[
+                InputMediaDocument(media=input_txt),
+                InputMediaDocument(media=output_txt),
+                InputMediaDocument(media=names_txt, caption=caption),
+            ],
+        )
+        await bot.send_message(query.from_user.id, caption + details)
 
 
 @router.callback_query(MenuCallback.filter(F.name == "change-search-limit"))
@@ -103,6 +110,7 @@ async def change_search_limit_state(message: types.Message, state: FSMContext):
         await state.update_data(limit=int(message.text))
     except Exception as e:
         await message.answer("Limit must be an integer")
+        await state.clear()
     await start_search_handler(message.from_user, state, message.message_id)
 
 
@@ -119,7 +127,7 @@ async def extend_search_queries_state(message: types.Message, state: FSMContext)
     with suppress(TelegramBadRequest):
         await bot.delete_message(message.from_user.id, message.message_id - 1)
     state_data = await state.get_data()
-    search_queries: list[list] = state_data.get("search_queries")
+    search_queries: list[list] = state_data.get("search_queries") or []
     new_search_queries = [s.strip() for s in message.text.split(",")]
     search_queries.append(new_search_queries)
     await state.update_data(search_queries=search_queries)
@@ -137,6 +145,7 @@ async def delete_search_query(
         await state.set_state(SearchState.delete)
     else:
         await query.answer("The list of keywords is empty!")
+        await state.clear()
 
 
 @router.message(SearchState.delete)
@@ -150,6 +159,7 @@ async def delete_search_query_state(message: types.Message, state: FSMContext):
         await state.update_data(search_queries=search_queries)
     except Exception as e:
         await message.answer(f"Exception: {e}")
+        await state.clear()
     await start_search_handler(message.from_user, state, message.message_id)
 
 
@@ -165,6 +175,7 @@ async def replace_search_query(
         )
         await state.set_state(SearchState.replace)
     else:
+        await state.clear()
         await query.answer("The list of keywords is empty!")
 
 
@@ -180,6 +191,7 @@ async def replace_search_query_state(message: types.Message, state: FSMContext):
         await state.update_data(search_queries=search_queries)
     except Exception as e:
         await message.answer(f"Exception: {e}")
+        await state.clear()
     await start_search_handler(message.from_user, state, message.message_id)
 
 

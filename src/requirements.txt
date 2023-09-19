@@ -16,3 +16,5 @@ selenium
 selenium_recaptcha_solver==1.9.0
 webdriver_manager
 fake-useragent
+Pyrogram
+TgCrypto
