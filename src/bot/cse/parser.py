@@ -32,7 +32,7 @@ LYZEM_BASE_URL = "https://lyzem.com/search?f=channels&l=%3Aen&per-page=100&q="
 #         return response.html.html
 
 
-def extract_html(driver, solver, url):
+def extract_html(driver, solver=None, *, url):
     # Set up Chrome options for headless browsing
     try:
         logger.debug(f"Goto: {url}")
@@ -42,17 +42,18 @@ def extract_html(driver, solver, url):
         driver.get(url=url)
         source_html = driver.page_source
         logger.debug(f"t.me in source_html: {'t.me' in source_html}")
-        try:
-            recaptcha_iframe = driver.find_element(
-                By.XPATH, '//iframe[@title="reCAPTCHA"]'
-            )
-            logger.warning(f"reCAPTCHA {recaptcha_iframe}")
-            solver.click_recaptcha_v2(iframe=recaptcha_iframe)
-            logger.info("reCAPTCHA solved")
-            time.sleep(random.randint(2, 4) / 10)
-            driver.get(url=url)
-        except NoSuchElementException as e:
-            pass
+        if solver:
+            try:
+                recaptcha_iframe = driver.find_element(
+                    By.XPATH, '//iframe[@title="reCAPTCHA"]'
+                )
+                logger.warning(f"reCAPTCHA {recaptcha_iframe}")
+                solver.click_recaptcha_v2(iframe=recaptcha_iframe)
+                logger.info("reCAPTCHA solved")
+                time.sleep(random.randint(2, 4) / 10)
+                driver.get(url=url)
+            except NoSuchElementException as e:
+                pass
         return source_html
     except Exception as e:
         logger.error(f"An error occurred: {e}")
@@ -86,7 +87,7 @@ def search_channels_lyzem(driver, solver, query: str, limit=100):
     logger.debug(f"Lyzem initial request url {initial_request_url}")
 
     # extract channels from initial page
-    source_html = extract_html(driver, solver, initial_request_url)
+    source_html = extract_html(driver, solver, url=initial_request_url)
     page_channels = parse_lyzem_page(source_html)
     all_channels = page_channels
 
@@ -108,7 +109,7 @@ def search_channels_lyzem(driver, solver, query: str, limit=100):
     for i in range(num_pages):
         request_url = initial_request_url + "&p=" + str(i + 1)
         logger.debug(f"Lyzem request url {request_url}; Channels: {len(all_channels)}")
-        source_html = extract_html(driver, solver, request_url)
+        source_html = extract_html(driver, solver, url=request_url)
         page_channels = parse_lyzem_page(source_html)
         for channel in page_channels:
             if channel not in all_channels:
@@ -150,7 +151,7 @@ def search_channels_telegago(driver, solver, query: str, limit=100):
     logger.debug("Telegago initial request url {}".format(initial_request_url))
 
     # extract channels from initial page
-    source_html = extract_html(driver, solver, initial_request_url)
+    source_html = extract_html(driver, solver, url=initial_request_url)
     page_channels = parse_telegago_page(source_html)
     all_channels = page_channels
 
@@ -174,7 +175,7 @@ def search_channels_telegago(driver, solver, query: str, limit=100):
         logger.debug(
             f"Telegago request url {request_url}; Channels: {len(all_channels)}"
         )
-        source_html = extract_html(driver, solver, request_url)
+        source_html = extract_html(driver, solver, url=request_url)
         page_channels = parse_telegago_page(source_html)
         for channel in page_channels:
             if channel not in all_channels:

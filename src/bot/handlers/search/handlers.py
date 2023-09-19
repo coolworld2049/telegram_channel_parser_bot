@@ -49,7 +49,6 @@ async def start_search_message(message: types.Message, state: FSMContext):
         and get_settings().BOT_ACL_ENABLED
     ):
         return None
-    await state.clear()
     await message.delete()
     await start_search_handler(message.from_user, state, message.message_id)
 
@@ -65,38 +64,36 @@ async def start_searching(
         await state.clear()
         return None
     logger.debug(search_queries)
-    _channels = await search_handler(
+    async for channels in search_handler(
         query.from_user, search_queries, limit=state_data.get("limit") or 100
-    )
-    channels = []
-    if not len(_channels) > 0:
-        await bot.send_message("No channels found")
-        return None
-    for ch in list(_channels.values()):
-        if len(ch) > 0:
-            channels.extend(ch)
-    caption = (
-        f"query - <code>{' | '.join(list(map(lambda x: x[0], search_queries)))}</code>"
-    )
-    details = f"\nchannels: {len(channels)}"
-    input_txt = BufferedInputFile(
-        "\n".join(list(map(lambda x: ", ".join(x), search_queries))).encode("utf-8"),
-        "input.txt",
-    )
-    output_txt = BufferedInputFile("\n".join(channels).encode("utf-8"), "output.txt")
-    usernames_txt = BufferedInputFile(
-        "\n".join(map(lambda x: x.split("/")[-1], channels)).encode("utf-8"),
-        "usernames.txt",
-    )
-    await bot.send_media_group(
-        query.from_user.id,
-        media=[
-            InputMediaDocument(media=input_txt),
-            InputMediaDocument(media=output_txt),
-            InputMediaDocument(media=usernames_txt, caption=caption),
-        ],
-    )
-    await bot.send_message(query.from_user.id, caption + details)
+    ):
+        if not len(channels) > 0:
+            await bot.send_message("No channels found")
+            return None
+        caption = f"query - <code>{' | '.join(list(map(lambda x: x[0], search_queries)))}</code>"
+        details = f"\nchannels: {len(channels)}"
+        input_txt = BufferedInputFile(
+            "\n".join(list(map(lambda x: ", ".join(x), search_queries))).encode(
+                "utf-8"
+            ),
+            "input.txt",
+        )
+        output_txt = BufferedInputFile(
+            "\n".join(channels).encode("utf-8"), "output.txt"
+        )
+        names_txt = BufferedInputFile(
+            "\n".join(map(lambda x: x.split("/")[-1], channels)).encode("utf-8"),
+            "names.txt",
+        )
+        await bot.send_media_group(
+            query.from_user.id,
+            media=[
+                InputMediaDocument(media=input_txt),
+                InputMediaDocument(media=output_txt),
+                InputMediaDocument(media=names_txt, caption=caption),
+            ],
+        )
+        await bot.send_message(query.from_user.id, caption + details)
 
 
 @router.callback_query(MenuCallback.filter(F.name == "change-search-limit"))

@@ -8,12 +8,12 @@ from aiogram.types import User, Message, CallbackQuery, ErrorEvent
 from loguru import logger
 
 from bot.callbacks import MenuCallback
-from bot.handlers import search, userbot
+from bot.handlers import search
 from bot.loader import bot
 from bot.template_engine import render_template
 
 router = Router(name=__file__)
-router.include_routers(*[search.router, userbot.router])
+router.include_routers(*[search.router])
 
 
 @router.error(

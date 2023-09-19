@@ -29,11 +29,13 @@ services:
   standalone-chrome:
     image: selenium/standalone-chrome
     hostname: standalone-chrome
-    env_file:
-      - ./.env
     environment:
       - SE_NODE_MAX_SESSIONS=3
+#      - SE_SESSION_RETRY_INTERVAL=2
+#      - SE_SESSION_REQUEST_TIMEOUT=600
+#      - SE_NODE_SESSION_TIMEOUT=600
+#      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
     ports:
-      - "4444:4444"
-    shm_size: '2g'
+      - "4440-4444:4440-4444"
+    shm_size: '4g'
     restart: on-failure

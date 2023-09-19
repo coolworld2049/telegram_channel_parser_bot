@@ -1,5 +1,4 @@
 import pathlib
-import time
 
 import pyrogram
 from loguru import logger
@@ -15,7 +14,6 @@ async def userbot_connect():
         userbot.session_string = session_string_p.open("r").read().strip()
         userbot.in_memory = True
         try:
-            time.sleep(0.5)
             await userbot.connect()
             await userbot.get_me()
             session = await userbot.export_session_string()
