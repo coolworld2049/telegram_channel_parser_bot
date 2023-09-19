@@ -1,3 +1,4 @@
+import json
 import random
 import time
 import urllib
@@ -12,7 +13,7 @@ from selenium.webdriver.common.by import By
 from selenium_recaptcha_solver import RecaptchaSolver
 
 from bot.loader import chrome_options
-from core.settings import get_settings
+from bot.settings import get_settings
 
 TELEGAGO_BASE_URL = "https://cse.google.com/cse?q=+&cx=006368593537057042503:efxu7xprihg#gsc.tab=0&gsc.ref=more%3Apublic&gsc.q="
 LYZEM_BASE_URL = "https://lyzem.com/search?f=channels&l=%3Aen&per-page=100&q="
@@ -32,13 +33,12 @@ LYZEM_BASE_URL = "https://lyzem.com/search?f=channels&l=%3Aen&per-page=100&q="
 #         return response.html.html
 
 
-def extract_html(driver, solver=None, *, url):
-    # Set up Chrome options for headless browsing
+def extract_html(driver, solver=None, timeout=True, *, url):
     try:
         logger.debug(f"Goto: {url}")
-        delay = random.randint(4, random.randint(8, 15)) / 10
+        delay = random.randint(1, random.randint(2, 3)) / 10
         logger.debug(f"delay {delay} sec")
-        time.sleep(delay)
+        not timeout or time.sleep(delay)
         driver.get(url=url)
         source_html = driver.page_source
         logger.debug(f"t.me in source_html: {'t.me' in source_html}")
@@ -50,7 +50,7 @@ def extract_html(driver, solver=None, *, url):
                 logger.warning(f"reCAPTCHA {recaptcha_iframe}")
                 solver.click_recaptcha_v2(iframe=recaptcha_iframe)
                 logger.info("reCAPTCHA solved")
-                time.sleep(random.randint(2, 4) / 10)
+                not timeout or time.sleep(random.randint(2, 4) / 10)
                 driver.get(url=url)
             except NoSuchElementException as e:
                 pass
@@ -61,7 +61,7 @@ def extract_html(driver, solver=None, *, url):
 
 
 # method to parse the HTML from the Lyzem page
-def parse_lyzem_page(html):
+def parse_lyzem_page(driver, html):
     soup = BeautifulSoup(html, "lxml")
     links = soup.find_all("p", attrs={"class", "search-result-title"})
     channels = []
@@ -73,22 +73,22 @@ def parse_lyzem_page(html):
             if "ann" in element_classes:
                 continue
             path_url = link.find_next("a").get("href")
-            channel_name = path_url.split("?")[0].split("/")[-1]
-            if channel_name not in channels:
-                channels.append(channel_name)
+            # channel_name = path_url.split("?")[0].split("/")[-1]
+            if path_url not in channels:
+                channels.append(path_url)
         except KeyError:
             continue
     return channels
 
 
-def search_channels_lyzem(driver, solver, query: str, limit=100):
+def search_channels_lyzem(driver, query: str, limit=100):
     initial_request_url = LYZEM_BASE_URL + urllib.parse.quote(query)
     # logger.debug("Lyzem request url {}".format(initial_request_url))
     logger.debug(f"Lyzem initial request url {initial_request_url}")
 
     # extract channels from initial page
-    source_html = extract_html(driver, solver, url=initial_request_url)
-    page_channels = parse_lyzem_page(source_html)
+    source_html = extract_html(driver, url=initial_request_url)
+    page_channels = parse_lyzem_page(driver, source_html)
     all_channels = page_channels
 
     # if reached limit return the channels
@@ -109,14 +109,14 @@ def search_channels_lyzem(driver, solver, query: str, limit=100):
     for i in range(num_pages):
         request_url = initial_request_url + "&p=" + str(i + 1)
         logger.debug(f"Lyzem request url {request_url}; Channels: {len(all_channels)}")
-        source_html = extract_html(driver, solver, url=request_url)
-        page_channels = parse_lyzem_page(source_html)
+        source_html = extract_html(driver, url=request_url)
+        page_channels = parse_lyzem_page(driver, source_html)
         for channel in page_channels:
             if channel not in all_channels:
                 all_channels.append(channel)
         if len(all_channels) >= limit:
             return all_channels[:limit]
-    logger.debug({query: all_channels})
+    logger.info({"query": query, "channels": len(all_channels)})
     return all_channels
 
 
@@ -193,7 +193,7 @@ if __name__ == "__main__":
     )
     solver = RecaptchaSolver(driver=driver)
     print("search_channels_lyzem")
-    res = search_channels_lyzem(driver, solver, "Чат южная корея")
+    res = search_channels_lyzem(driver, "Чат южная корея")
     pprint(res)
 
     print("search_channels_telegago")

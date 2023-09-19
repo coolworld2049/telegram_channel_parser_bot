@@ -15,7 +15,7 @@ def generate_search_queries(*levels: list):
         level1 = levels[0]
         level2 = levels[1]
         level3 = levels[2]
-    except:
+    except:  # noqa
         pass
     # Rule 1: Generate queries with only level 1 keywords
     if len(level1) > 0:
@@ -41,31 +41,30 @@ def generate_search_queries(*levels: list):
                     yield SearchQuery(country=country, city=city, category=category)
 
 
+def get_generated_search_queries(queries: list[list]):
+    new_search_queries = set()
+    for query in generate_search_queries(*queries):
+        md = query.model_dump(exclude_none=True).values()
+        if len(md) > 0:
+            q = " ".join(md).strip(" ")
+            new_search_queries.add(q)
+    return list(new_search_queries)
+
+
 if __name__ == "__main__":
-    # Example usage
-    level1_keywords = ["южная корея", "корея"]
-    level2_keywords = ["сеул", "бусан", "инчон", "андон", "кёнджу", "тэгу", "кванджу"]
+    level1_keywords = ["южная корея"]
+    level2_keywords = ["сеул", "бусан", "инчон"]
     level3_keywords = [
         "работа",
         "туризм",
-        "хвасон",
         "виза",
-        "g1",
         "страхование",
-        "страховка",
-        "караоке",
-        "ктв",
-        "ktv",
-        "солнечные батареи",
-        "кёнгидо",
-        "Канвондо Янъян",
     ]
     s = time.time()
     for query in generate_search_queries(
         level1_keywords, level2_keywords, level3_keywords
     ):
-        logger.debug(
-            f"Country: {query.country} City: {query.city} Category: {query.category}"
-        )
+        q = query.model_dump(exclude_none=True)
+        logger.debug(" ".join(q.values()))
     e = time.time()
     print(f"{e - s}")

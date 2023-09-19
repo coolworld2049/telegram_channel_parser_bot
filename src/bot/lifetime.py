@@ -1,7 +1,7 @@
 from aiogram import Dispatcher
 from loguru import logger
 
-from core.settings import get_settings
+from settings import get_settings
 from handlers import main
 from loader import bot
 from bot.userbot import userbot, userbot_connect  # noqa

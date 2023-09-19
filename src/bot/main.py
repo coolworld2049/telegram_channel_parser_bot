@@ -3,7 +3,7 @@ import sys
 
 from loguru import logger
 
-from core.settings import get_settings
+from settings import get_settings
 from dispatcher import dp
 from lifetime import startup_bot, shutdown_bot
 from loader import bot
