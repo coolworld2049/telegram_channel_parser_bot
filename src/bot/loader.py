@@ -1,5 +1,4 @@
 from aiogram import Bot
-from fake_useragent import UserAgent
 from redis.asyncio import Redis
 from selenium.webdriver.chrome.options import Options
 
@@ -8,9 +7,6 @@ from core.settings import get_settings
 redis = Redis.from_url(get_settings().redis_url)
 
 bot = Bot(get_settings().BOT_TOKEN, parse_mode="HTML")
-
-
-user_agent = UserAgent()
 
 chrome_options = Options()
 chrome_options.add_argument("--headless")

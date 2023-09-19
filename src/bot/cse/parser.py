@@ -36,7 +36,7 @@ def extract_html(driver, solver=None, *, url):
     # Set up Chrome options for headless browsing
     try:
         logger.debug(f"Goto: {url}")
-        delay = random.randint(4, random.randint(8, 15)) / 10
+        delay = random.randint(4, random.randint(6, 10)) / 10
         logger.debug(f"delay {delay} sec")
         time.sleep(delay)
         driver.get(url=url)
@@ -81,13 +81,13 @@ def parse_lyzem_page(html):
     return channels
 
 
-def search_channels_lyzem(driver, solver, query: str, limit=100):
+def search_channels_lyzem(driver, query: str, limit=100):
     initial_request_url = LYZEM_BASE_URL + urllib.parse.quote(query)
     # logger.debug("Lyzem request url {}".format(initial_request_url))
     logger.debug(f"Lyzem initial request url {initial_request_url}")
 
     # extract channels from initial page
-    source_html = extract_html(driver, solver, url=initial_request_url)
+    source_html = extract_html(driver, url=initial_request_url)
     page_channels = parse_lyzem_page(source_html)
     all_channels = page_channels
 
@@ -109,7 +109,7 @@ def search_channels_lyzem(driver, solver, query: str, limit=100):
     for i in range(num_pages):
         request_url = initial_request_url + "&p=" + str(i + 1)
         logger.debug(f"Lyzem request url {request_url}; Channels: {len(all_channels)}")
-        source_html = extract_html(driver, solver, url=request_url)
+        source_html = extract_html(driver, url=request_url)
         page_channels = parse_lyzem_page(source_html)
         for channel in page_channels:
             if channel not in all_channels:
@@ -193,7 +193,7 @@ if __name__ == "__main__":
     )
     solver = RecaptchaSolver(driver=driver)
     print("search_channels_lyzem")
-    res = search_channels_lyzem(driver, solver, "Чат южная корея")
+    res = search_channels_lyzem(driver, "Чат южная корея")
     pprint(res)
 
     print("search_channels_telegago")

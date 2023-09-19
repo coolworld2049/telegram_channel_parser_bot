@@ -5,15 +5,15 @@ from typing import Any
 
 import aiohttp
 from aiogram import types
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, SoupStrainer
 from loguru import logger
 from selenium import webdriver
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium_recaptcha_solver import RecaptchaSolver
 from tqdm.contrib.telegram import tqdm
 
-from bot.cse.parser import search_channels_lyzem, search_channels_telegago, extract_html
-from bot.loader import chrome_options, user_agent, bot
+from bot.cse.parser import search_channels_lyzem, extract_html
+from bot.loader import chrome_options, bot
 from bot.search_query_builder.main import generate_search_queries
 from core.settings import get_settings
 
@@ -87,15 +87,17 @@ async def check_channel_existence(user, driver: WebDriver, channels: list):
                 chat_id=user.id,
             )
         ):
-            ch = channel.replace("t.me/", "t.me/s/")
-            html = extract_html(driver, url=ch)
-            soup = BeautifulSoup(html, "lxml")
-            link = soup.find("a", attrs={"class", "tgme_header_link"})
+            html = extract_html(driver, url=channel)
+            link = BeautifulSoup(
+                html,
+                "lxml",
+                parse_only=SoupStrainer(
+                    "a", attrs={"class", "tgme_action_button_new shine"}
+                ),
+            )
             if link:
                 filtered.append(channel)
-                logger.info(
-                    f"{i}/{len(channels)} - channel {channel} exist! Link: {link.get('href')}"
-                )
+                logger.info(f"{i}/{len(channels)} - channel {channel} EXIST!")
             else:
                 logger.info(f"{i}/{len(channels)} - channel {channel} not found")
         logger.info(
@@ -144,7 +146,6 @@ async def search_handler(user: types.User, queries: list[list], limit=100):
         yield None
     await asyncio.sleep(random.randint(1, 2) / 10)
     _queries = get_search_queries(queries)
-    chrome_options.add_argument(f"--user-agent={user_agent.chrome}")
     driver = webdriver.Remote(
         command_executor=get_settings().SE_WEBDRIVER_URL + "/wd/hub",
         options=chrome_options,
@@ -162,7 +163,6 @@ async def search_handler(user: types.User, queries: list[list], limit=100):
                 logger.info("Lyzem...")
                 _lyzem_channels = search_channels_lyzem(
                     driver,
-                    solver,
                     query,
                     limit,
                 )
@@ -173,25 +173,25 @@ async def search_handler(user: types.User, queries: list[list], limit=100):
                 search_results_count = sum([len(x) for x in search_results.values()])
                 post_log_search_results(i, query, search_results_count, lyzem_channels)
 
-                logger.info("Telegago...")
-                _telegago_channels = search_channels_telegago(
-                    driver,
-                    solver,
-                    query,
-                    limit,
-                )
-                telegago_channels = {f"https://t.me/{x}" for x in _telegago_channels}
-                search_results.update(
-                    {
-                        "telegago": search_results.get("telegago").union(
-                            telegago_channels
-                        )
-                    }
-                )
-                search_results_count = sum([len(x) for x in search_results.values()])
-                post_log_search_results(
-                    i, query, search_results_count, telegago_channels
-                )
+                # logger.info("Telegago...")
+                # _telegago_channels = search_channels_telegago(
+                #     driver,
+                #     solver,
+                #     query,
+                #     limit,
+                # )
+                # telegago_channels = {f"https://t.me/{x}" for x in _telegago_channels}
+                # search_results.update(
+                #     {
+                #         "telegago": search_results.get("telegago").union(
+                #             telegago_channels
+                #         )
+                #     }
+                # )
+                # search_results_count = sum([len(x) for x in search_results.values()])
+                # post_log_search_results(
+                #     i, query, search_results_count, telegago_channels
+                # )
             except Exception as e:
                 logger.error(f"{i} - {e}")
         _channels = []

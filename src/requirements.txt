@@ -15,6 +15,5 @@ tqdm
 selenium
 selenium_recaptcha_solver
 webdriver_manager
-fake-useragent
 Pyrogram
 TgCrypto

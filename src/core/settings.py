@@ -14,7 +14,7 @@ class BotSettings(BaseSettings):
         BotCommand(
             command="/search", description="Search telegram channels by keywords"
         ),
-        BotCommand(command="/authorize", description="Auth in telegram account"),
+        # BotCommand(command="/authorize", description="Auth in telegram account"),
         BotCommand(command="/start", description="Start bot"),
     ]
     BOT_ACL: list[int] = []
