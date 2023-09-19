@@ -9,11 +9,9 @@ pytz~=2023.3
 uvicorn~=0.23.2
 redis
 aiohttp
+requests
 
-requests_html
 tqdm
 selenium
 selenium_recaptcha_solver
 webdriver_manager
-Pyrogram
-TgCrypto

@@ -8,7 +8,7 @@ def search_keyboard_builder():
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(
-            text="Search",
+            text="🔍",
             callback_data=MenuCallback(
                 name="start-searching",
             ).pack(),
@@ -16,7 +16,7 @@ def search_keyboard_builder():
     )
     builder.row(
         InlineKeyboardButton(
-            text="Set limit",
+            text="Set limit per query",
             callback_data=MenuCallback(
                 name="change-search-limit",
             ).pack(),
@@ -24,27 +24,25 @@ def search_keyboard_builder():
     )
     builder.row(
         InlineKeyboardButton(
-            text="Add",
+            text="➕",
             callback_data=MenuCallback(
                 name="extend-search-queries",
             ).pack(),
         ),
         InlineKeyboardButton(
-            text="Update",
+            text="➖",
+            callback_data=MenuCallback(
+                name="delete-search-query",
+            ).pack(),
+        ),
+        InlineKeyboardButton(
+            text="🔄",
             callback_data=MenuCallback(
                 name="replace-search-query",
             ).pack(),
         ),
         InlineKeyboardButton(
-            text="Delete",
-            callback_data=MenuCallback(
-                name="delete-search-query",
-            ).pack(),
-        ),
-    )
-    builder.row(
-        InlineKeyboardButton(
-            text="Clean",
+            text="🗑️",
             callback_data=MenuCallback(
                 name="clean-search-queries",
             ).pack(),

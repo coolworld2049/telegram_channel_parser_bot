@@ -7,4 +7,9 @@ services:
       file: docker-compose.yml
     image: redis/redis-stack:latest
     ports:
+      - "6379:6379"
       - "8001:8001"
+  standalone-chrome:
+    extends:
+      service: standalone-chrome
+      file: docker-compose.yml

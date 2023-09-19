@@ -11,11 +11,10 @@ load_dotenv()
 class BotSettings(BaseSettings):
     BOT_TOKEN: str
     BOT_COMMANDS: list[BotCommand] = [
+        BotCommand(command="/start", description="Start bot"),
         BotCommand(
             command="/search", description="Search telegram channels by keywords"
         ),
-        # BotCommand(command="/authorize", description="Auth in telegram account"),
-        BotCommand(command="/start", description="Start bot"),
     ]
     BOT_ACL: list[int] = []
     BOT_ACL_ENABLED: bool = False
