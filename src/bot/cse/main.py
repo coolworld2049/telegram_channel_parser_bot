@@ -54,7 +54,7 @@ async def telegram_parsing_handler(user: types.User, queries: list[str], limit=1
                 )
                 search_results.extend(lyzem_channels)
                 logger.info(
-                    {"index": i, "query": query, "channels": len(lyzem_channels)}
+                    {"index": i, "query": query, "unique_channels": len(set(search_results))}
                 )
             except Exception as e:
                 logger.info({"index": i, "exception": e})

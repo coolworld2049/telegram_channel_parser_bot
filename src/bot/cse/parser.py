@@ -116,7 +116,7 @@ def search_channels_lyzem(driver, query: str, limit=100):
                 all_channels.append(channel)
         if len(all_channels) >= limit:
             return all_channels[:limit]
-    logger.info({"query": query, "channels": len(all_channels)})
+    logger.debug({"query": query, "channels": all_channels})
     return all_channels
 
 
