@@ -10,4 +10,5 @@ class SearchState(StatesGroup):
 
 class SessionState(StatesGroup):
     set_creds = State()
-    upload_session = State()
+    send_code = State()
+    sign_in = State()
