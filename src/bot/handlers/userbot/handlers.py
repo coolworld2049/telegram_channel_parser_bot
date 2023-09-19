@@ -32,7 +32,7 @@ async def set_session(message: types.Message, state: FSMContext):
 
 @router.message(SessionState.send_code)
 async def upload_session_state(message: types.Message, state: FSMContext):
-    data = message.caption.split(":")
+    data = message.text.split(":")
     if len(data) != 3:
         await message.answer("Invalid input")
         return None
@@ -61,7 +61,6 @@ async def sign_in_state(message: types.Message, state: FSMContext):
     account = state_data.get("account")
     phone_code_hash = state_data.get("phone_code_hash")
     try:
-        await userbot.connect()
         await userbot.sign_in(
             account.get("phone_number"), phone_code_hash, message.text
         )

@@ -46,7 +46,7 @@ async def get_slots_with_sessions():
 
 
 async def check_channel_existence(index, channels: list[str]):
-    if not userbot.is_initialized:
+    if not userbot.is_connected:
         logger.warning({index: f"userbot.is_connected: {userbot.is_connected}"})
         return channels
     filtered = []

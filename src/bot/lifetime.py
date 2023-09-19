@@ -4,10 +4,11 @@ from loguru import logger
 from core.settings import get_settings
 from handlers import main
 from loader import bot
-from bot.userbot import userbot
+from bot.userbot import userbot, userbot_connect
 
 
 async def startup_bot(dp: Dispatcher) -> None:
+    await userbot_connect()
     await bot.delete_my_commands()
     await bot.set_my_commands(get_settings().BOT_COMMANDS)
     dp.include_routers(main.router)
