@@ -4,6 +4,7 @@ import pathlib
 from aiogram import Router, types, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
+from loguru import logger
 
 import bot.userbot
 from bot.handlers.search.handlers import start_search_handler
@@ -18,9 +19,7 @@ destination = pathlib.Path(__file__).parent.parent.parent
 
 
 async def start_userbot_client(account: dict):
-    p = destination.joinpath("pyrogram_account.json")
-    p.open("w").write(json.dumps(account, indent=2))
-
+    destination.joinpath("pyrogram_account.json").open("w").write(json.dumps(account, indent=2))
     session_string_p = destination.joinpath("pyrogram.txt")
     if session_string_p.exists():
         bot.userbot.session_string = session_string_p.open("r").read().strip()
@@ -31,7 +30,7 @@ async def start_userbot_client(account: dict):
         userbot.phone_number = account.get("phone_number")
     await userbot.start()
     session = await userbot.export_session_string()
-    session_string_p.open("w").write(session)
+    session_string_p.open("w").write(str(session))
 
 
 @router.message(Command("start_userbot"))
@@ -48,6 +47,7 @@ async def start_userbot(message: types.Message, state: FSMContext):
         await start_userbot_client(account)
         await start_search_handler(message.from_user, state, message.message_id)
     except Exception as e:
+        logger.exception(e)
         await message.answer(str(e))
 
 
@@ -86,4 +86,5 @@ async def upload_session_state(message: types.Message, state: FSMContext):
         await state.clear()
         await start_search_handler(message.from_user, state, message.message_id)
     except Exception as e:
+        logger.exception(e)
         await message.answer(str(e))

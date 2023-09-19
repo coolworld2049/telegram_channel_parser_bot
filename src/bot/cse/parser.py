@@ -170,7 +170,7 @@ def search_channels_telegago(driver, solver, query: str, limit=100):
 
     # then iterate over all pages to extract all channels
     for i in range(num_pages):
-        request_url = initial_request_url + "&gsc.page=" + str(i + 1) + "&gsc.sort=date"
+        request_url = initial_request_url + "&gsc.page=" + str(i + 1) + "&gsc.sort="
         logger.debug(
             f"Telegago request url {request_url}; Channels: {len(all_channels)}"
         )

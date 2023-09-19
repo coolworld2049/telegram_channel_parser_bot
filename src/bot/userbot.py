@@ -1,5 +1,6 @@
 import asyncio
 import pathlib
+import time
 
 import pyrogram
 from loguru import logger
@@ -11,6 +12,7 @@ if session_string_p.exists():
     userbot.session_string = session_string_p.open("r").read().strip()
     userbot.in_memory = True
     try:
+        time.sleep(.5)
         asyncio.run(userbot.start())
     except Exception as e:
         logger.warning(e)
