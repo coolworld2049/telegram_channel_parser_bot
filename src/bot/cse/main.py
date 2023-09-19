@@ -47,7 +47,6 @@ async def telegram_parsing_handler(user: types.User, queries: list[str], limit=1
             chat_id=user.id,
         ):
             try:
-                logger.info({"index": i, "query": query})
                 lyzem_channels = search_channels_lyzem(
                     selenium_webdriver,
                     query,
@@ -59,7 +58,8 @@ async def telegram_parsing_handler(user: types.User, queries: list[str], limit=1
                 )
             except Exception as e:
                 logger.info({"index": i, "exception": e})
-        yield set(search_results)
+        search_results = set(search_results)
+        yield search_results
         m = "Check for channels existence"
 
         await bot.send_message(user.id, "Check for channels existence")
@@ -70,7 +70,7 @@ async def telegram_parsing_handler(user: types.User, queries: list[str], limit=1
             chat_id=user.id,
         ):
             channel_exist = check_channel_existence(selenium_webdriver, channel)
-            if channel_exist:
+            if channel_exist and channel:
                 filtered_search_results.append(channel)
                 logger.info(f"{i}/{len(search_results)} channel {channel} EXIST!")
             else:

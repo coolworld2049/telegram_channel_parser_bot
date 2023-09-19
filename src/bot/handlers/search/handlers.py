@@ -27,14 +27,16 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
     keywords = [", ".join(x) for i, x in enumerate(search_queries)]
     generated_search_queries = list(get_generated_search_queries(search_queries))
     await state.update_data(search_queries=search_queries)
+    text = render_template(
+        "search_menu.html",
+        query_count=len(generated_search_queries),
+        limit_per_query=limit_per_query,
+        expected_channels=len(generated_search_queries) * limit_per_query,
+        keywords=enumerate(keywords),
+    )
     await bot.send_message(
         user.id,
-        render_template(
-            "search_menu.html",
-            query_count=len(generated_search_queries),
-            limit_per_query=limit_per_query,
-            keywords=enumerate(keywords),
-        ),
+        f"{text[:4090]} ...</code>",
         reply_markup=search_keyboard_builder().as_markup(),
     )
 
