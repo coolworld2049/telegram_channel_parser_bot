@@ -3,6 +3,7 @@ import random
 
 import aiohttp
 from aiogram import types
+from aiogram.types import BufferedInputFile
 from bs4 import BeautifulSoup
 from loguru import logger
 from selenium import webdriver
@@ -11,7 +12,6 @@ from tqdm.contrib.telegram import tqdm
 
 from bot.cse.parser import (
     search_channels_lyzem,
-    search_channels_telegago,
 )
 from bot.loader import bot, user_agent, chrome_options
 from bot.settings import get_settings
@@ -76,6 +76,10 @@ async def telegram_parsing_handler(user: types.User, queries: list[str], limit=1
                 }
             )
         search_results = set(search_results)
+        output = BufferedInputFile(
+            "\n".join(list(search_results)).encode("utf-8"), "result.txt"
+        )
+        await bot.send_document(user.id, output)
         m = "Check for channels existence"
         logger.info(m)
         await bot.send_message(user.id, "Check for channels existence")
@@ -87,9 +91,9 @@ async def telegram_parsing_handler(user: types.User, queries: list[str], limit=1
         ):
             await asyncio.sleep(random.randint(1, 2) / 10)
             channel_exist = await check_channel_existence(channel, 3)
-            if channel_exist and channel:
+            if channel_exist and channel and channel not in filtered_search_results:
                 filtered_search_results.append(channel)
-                logger.info(f"{i}/{len(search_results)} channel {channel} EXIST!")
+                logger.info(f"{i}/{len(search_results)} channel {channel} EXIST! unique_filtered_search_results {len(filtered_search_results)}")
             else:
                 logger.info(f"{i}/{len(search_results)} channel {channel} not found")
     except Exception as e:
@@ -101,7 +105,7 @@ async def telegram_parsing_handler(user: types.User, queries: list[str], limit=1
 async def check_channel_existence(url, retries):
     url = url.replace("t.me/", "t.me/s/")
     headers = {
-        'User-Agent': user_agent.random,
+        "User-Agent": user_agent.random,
     }
     try:
         async with aiohttp.ClientSession() as session:
@@ -119,5 +123,3 @@ async def check_channel_existence(url, retries):
             return False
         logger.info("Retry")
         await check_channel_existence(url, retries - 1)
-
-

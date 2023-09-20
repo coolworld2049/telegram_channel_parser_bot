@@ -15,7 +15,7 @@ from bot.loader import chrome_options
 from bot.settings import get_settings
 
 TELEGAGO_BASE_URL = "https://cse.google.com/cse?q=+&cx=006368593537057042503:efxu7xprihg#gsc.tab=0&gsc.ref=more%3Apublic&gsc.q="
-LYZEM_BASE_URL = "https://lyzem.com/search?f=channels&l=%3Aen&per-page=100&q="
+LYZEM_BASE_URL = "https://lyzem.com/search?f=channels&l=%3Aru&per-page=100&q="
 XTEA_BASE_URL = "https://xtea.io/ts_en.html#gsc.tab=0&gsc.q="
 
 
