@@ -1,5 +1,6 @@
 from aiogram import Bot
 from redis.asyncio import Redis
+from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 from settings import get_settings
@@ -14,3 +15,8 @@ chrome_options.add_argument("--window-size=1920,1080")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-extensions")
 chrome_options.add_argument("--disable-gpu")
+
+selenium_webdriver = webdriver.Remote(
+    command_executor=get_settings().SE_WEBDRIVER_URL + "/wd/hub",
+    options=chrome_options,
+)

@@ -30,9 +30,9 @@ services:
     image: selenium/standalone-chrome
     hostname: standalone-chrome
     environment:
-      - SE_NODE_MAX_SESSIONS=3
+      - SE_NODE_MAX_SESSIONS=4
       - SE_NODE_SESSION_TIMEOUT=30
     ports:
       - "4440-4444:4440-4444"
-    shm_size: '4g'
+    shm_size: '2g'
     restart: on-failure

@@ -1,4 +1,3 @@
-import json
 import random
 import time
 import urllib
@@ -61,7 +60,7 @@ def extract_html(driver, solver=None, timeout=True, *, url):
 
 
 # method to parse the HTML from the Lyzem page
-def parse_lyzem_page(driver, html):
+def parse_lyzem_page(html):
     soup = BeautifulSoup(html, "lxml")
     links = soup.find_all("p", attrs={"class", "search-result-title"})
     channels = []
@@ -83,12 +82,11 @@ def parse_lyzem_page(driver, html):
 
 def search_channels_lyzem(driver, query: str, limit=100):
     initial_request_url = LYZEM_BASE_URL + urllib.parse.quote(query)
-    # logger.debug("Lyzem request url {}".format(initial_request_url))
     logger.debug(f"Lyzem initial request url {initial_request_url}")
 
     # extract channels from initial page
     source_html = extract_html(driver, url=initial_request_url)
-    page_channels = parse_lyzem_page(driver, source_html)
+    page_channels = parse_lyzem_page(source_html)
     all_channels = page_channels
 
     # if reached limit return the channels
@@ -98,9 +96,10 @@ def search_channels_lyzem(driver, query: str, limit=100):
     # otherwise we need to go to next pages
     # find the number of pages from the html
     soup = BeautifulSoup(source_html, "lxml")
-    cursor_div = soup.find_all("nav", {"class": "pages"})
+    cursor_div = soup.find_all("div", {"class": "pager"})
     try:
         num_pages = len(cursor_div[0].find_all("li"))
+        # cursor_div[0].find_all("li")[-1].find_next("a")["href"].split("&")[-2].split("=")[-1]
     except IndexError:
         num_pages = 0
         pass
@@ -110,13 +109,13 @@ def search_channels_lyzem(driver, query: str, limit=100):
         request_url = initial_request_url + "&p=" + str(i + 1)
         logger.debug(f"Lyzem request url {request_url}; Channels: {len(all_channels)}")
         source_html = extract_html(driver, url=request_url)
-        page_channels = parse_lyzem_page(driver, source_html)
+        page_channels = parse_lyzem_page(source_html)
         for channel in page_channels:
             if channel not in all_channels:
                 all_channels.append(channel)
         if len(all_channels) >= limit:
             return all_channels[:limit]
-    logger.debug({"query": query, "channels": all_channels})
+    logger.info({"query": query, "channels": len(all_channels)})
     return all_channels
 
 

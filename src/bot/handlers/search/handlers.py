@@ -25,18 +25,21 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
     search_queries = state_data.get("search_queries") or []
     limit_per_query = state_data.get("limit") or 100
     keywords = [", ".join(x) for i, x in enumerate(search_queries)]
-    generated_search_queries = list(get_generated_search_queries(search_queries))
     await state.update_data(search_queries=search_queries)
+    keywords.sort(key=lambda x: len(x))
+    keywords_length = sum([len(x) for x in keywords])
+    if keywords_length > 4096 - 144:
+        keywords[-1] = f"{keywords[-1][:500]}..."
+    generated_search_queries = list(get_generated_search_queries(search_queries))
     text = render_template(
         "search_menu.html",
         query_count=len(generated_search_queries),
         limit_per_query=limit_per_query,
-        expected_channels=len(generated_search_queries) * limit_per_query,
         keywords=enumerate(keywords),
     )
     await bot.send_message(
         user.id,
-        f"{text[:4090]} ...</code>",
+        text,
         reply_markup=search_keyboard_builder().as_markup(),
     )
 
@@ -61,38 +64,35 @@ async def start_searching(
         await query.answer("There are no keywords list")
         return None
     generated_queries = get_generated_search_queries(search_queries)
-    async for channels in telegram_parsing_handler(
+    channels = await telegram_parsing_handler(
         query.from_user, generated_queries, limit=state_data.get("limit") or 100
-    ):
-        if not channels:
-            await bot.send_message(query.from_user.id, "No channels found")
-            continue
-        search_queries_fragment = " | ".join(list(map(lambda x: x[0], search_queries)))
-        caption = render_template(
-            "parse_result.html",
-            query=search_queries_fragment,
-            channels_count=len(channels),
-        )
-        input = BufferedInputFile(
-            "\n".join(list(map(lambda x: ", ".join(x), search_queries))).encode(
-                "utf-8"
-            ),
-            filename="input.txt",
-        )
-        output = BufferedInputFile("\n".join(channels).encode("utf-8"), "output.txt")
-        names = BufferedInputFile(
-            "\n".join(map(lambda x: x.split("/")[-1], channels)).encode("utf-8"),
-            filename="names.txt",
-        )
-        await bot.send_media_group(
-            query.from_user.id,
-            media=[
-                InputMediaDocument(media=input),
-                InputMediaDocument(media=output),
-                InputMediaDocument(media=names, caption=caption),
-            ],
-        )
-        await bot.send_message(query.from_user.id, caption)
+    )
+    if not channels:
+        await bot.send_message(query.from_user.id, "No channels found")
+    search_queries_fragment = " | ".join(list(map(lambda x: x[0], search_queries)))
+    caption = render_template(
+        "parse_result.html",
+        query=search_queries_fragment,
+        channels_count=len(channels),
+    )
+    input = BufferedInputFile(
+        "\n".join(list(map(lambda x: ", ".join(x), search_queries))).encode("utf-8"),
+        filename="input.txt",
+    )
+    output = BufferedInputFile("\n".join(channels).encode("utf-8"), "output.txt")
+    names = BufferedInputFile(
+        "\n".join(map(lambda x: x.split("/")[-1], channels)).encode("utf-8"),
+        filename="names.txt",
+    )
+    await bot.send_media_group(
+        query.from_user.id,
+        media=[
+            InputMediaDocument(media=input),
+            InputMediaDocument(media=output),
+            InputMediaDocument(media=names, caption=caption),
+        ],
+    )
+    await bot.send_message(query.from_user.id, caption)
 
 
 @router.callback_query(MenuCallback.filter(F.name == "change-search-limit"))

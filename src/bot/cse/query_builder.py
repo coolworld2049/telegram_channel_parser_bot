@@ -46,9 +46,10 @@ def get_generated_search_queries(queries: list[list]):
     for query in generate_search_queries(*queries):
         md = query.model_dump(exclude_none=True).values()
         if len(md) > 0:
-            q = " ".join(md).strip(" ")
-            new_search_queries.add(q)
-    return list(new_search_queries)
+            q = " ".join(md).strip()
+            if q != "":
+                new_search_queries.add(q)
+    return list(set(new_search_queries))
 
 
 if __name__ == "__main__":
