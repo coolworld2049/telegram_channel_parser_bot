@@ -6,9 +6,13 @@ from aiogram import types
 from bs4 import BeautifulSoup
 from loguru import logger
 from selenium import webdriver
+from selenium_recaptcha_solver import RecaptchaSolver
 from tqdm.contrib.telegram import tqdm
 
-from bot.cse.parser import search_channels_lyzem
+from bot.cse.parser import (
+    search_channels_lyzem,
+    search_channels_telegago,
+)
 from bot.loader import bot, user_agent, chrome_options
 from bot.settings import get_settings
 
@@ -45,6 +49,7 @@ async def telegram_parsing_handler(user: types.User, queries: list[str], limit=1
         command_executor=get_settings().SE_WEBDRIVER_URL + "/wd/hub",
         options=chrome_options,
     )
+    solver = RecaptchaSolver(selenium_webdriver)
     selenium_slots = await selenium_remote_sessions()
     if len(selenium_slots) > 2:
         await bot.send_message(

@@ -16,6 +16,7 @@ from bot.settings import get_settings
 
 TELEGAGO_BASE_URL = "https://cse.google.com/cse?q=+&cx=006368593537057042503:efxu7xprihg#gsc.tab=0&gsc.ref=more%3Apublic&gsc.q="
 LYZEM_BASE_URL = "https://lyzem.com/search?f=channels&l=%3Aen&per-page=100&q="
+XTEA_BASE_URL = "https://xtea.io/ts_en.html#gsc.tab=0&gsc.q="
 
 
 # extracts the html from a URL using the requests_html library (supports JS)
@@ -151,7 +152,10 @@ def search_channels_telegago(driver, solver, query: str, limit=100):
     logger.debug("Telegago initial request url {}".format(initial_request_url))
 
     # extract channels from initial page
-    source_html = extract_html(driver, solver, url=initial_request_url)
+    try:
+        source_html = extract_html(driver, solver, url=initial_request_url)
+    except:
+        return None
     page_channels = parse_telegago_page(source_html)
     all_channels = page_channels
 
@@ -171,7 +175,7 @@ def search_channels_telegago(driver, solver, query: str, limit=100):
 
     # then iterate over all pages to extract all channels
     for i in range(num_pages):
-        request_url = initial_request_url + "&gsc.page=" + str(i + 1) + "&gsc.sort="
+        request_url = initial_request_url + "&gsc.sort=" + "&gsc.page=" + str(i + 1)
         logger.debug(
             f"Telegago request url {request_url}; Channels: {len(all_channels)}"
         )
@@ -182,7 +186,7 @@ def search_channels_telegago(driver, solver, query: str, limit=100):
                 all_channels.append(channel)
         if len(all_channels) >= limit:
             return all_channels[:limit]
-    logger.debug({query: all_channels})
+    logger.debug({query: len(all_channels)})
     return all_channels
 
 
