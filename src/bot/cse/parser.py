@@ -56,7 +56,7 @@ def extract_html(driver, solver=None, timeout=True, *, url):
         return source_html
     except Exception as e:
         logger.error(f"An error occurred: {e}")
-        return None
+        raise e
 
 
 # method to parse the HTML from the Lyzem page
@@ -97,6 +97,7 @@ def search_channels_lyzem(driver, query: str, limit=100):
     # find the number of pages from the html
     soup = BeautifulSoup(source_html, "lxml")
     cursor_div = soup.find_all("div", {"class": "pager"})
+    logger.debug(cursor_div)
     try:
         num_pages = len(cursor_div[0].find_all("li"))
         # cursor_div[0].find_all("li")[-1].find_next("a")["href"].split("&")[-2].split("=")[-1]

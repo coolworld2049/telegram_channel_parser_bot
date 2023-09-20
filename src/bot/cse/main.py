@@ -1,11 +1,15 @@
+import asyncio
+import random
+
 import aiohttp
 from aiogram import types
 from bs4 import BeautifulSoup
 from loguru import logger
+from selenium import webdriver
 from tqdm.contrib.telegram import tqdm
 
 from bot.cse.parser import search_channels_lyzem
-from bot.loader import bot, selenium_webdriver
+from bot.loader import bot, user_agent, chrome_options
 from bot.settings import get_settings
 
 
@@ -36,6 +40,11 @@ async def selenium_remote_sessions(path="status"):
 async def telegram_parsing_handler(user: types.User, queries: list[str], limit=100):
     search_results = []
     filtered_search_results = []
+
+    selenium_webdriver = webdriver.Remote(
+        command_executor=get_settings().SE_WEBDRIVER_URL + "/wd/hub",
+        options=chrome_options,
+    )
     selenium_slots = await selenium_remote_sessions()
     if len(selenium_slots) > 2:
         await bot.send_message(
@@ -48,24 +57,20 @@ async def telegram_parsing_handler(user: types.User, queries: list[str], limit=1
             token=get_settings().BOT_TOKEN,
             chat_id=user.id,
         ):
-            try:
-                lyzem_channels = search_channels_lyzem(
-                    selenium_webdriver,
-                    query,
-                    limit,
-                )
-                search_results.extend(lyzem_channels)
-                logger.info(
-                    {
-                        "index": i,
-                        "query": query,
-                        "unique_channels": len(set(search_results)),
-                    }
-                )
-            except Exception as e:
-                logger.info({"index": i, "exception": e})
+            lyzem_channels = search_channels_lyzem(
+                selenium_webdriver,
+                query,
+                limit,
+            )
+            search_results.extend(lyzem_channels)
+            logger.info(
+                {
+                    "index": i,
+                    "query": query,
+                    "unique_channels": len(set(search_results)),
+                }
+            )
         search_results = set(search_results)
-
         m = "Check for channels existence"
         logger.info(m)
         await bot.send_message(user.id, "Check for channels existence")
@@ -75,7 +80,8 @@ async def telegram_parsing_handler(user: types.User, queries: list[str], limit=1
             token=get_settings().BOT_TOKEN,
             chat_id=user.id,
         ):
-            channel_exist = await check_channel_existence(channel)
+            await asyncio.sleep(random.randint(1, 2) / 10)
+            channel_exist = await check_channel_existence(channel, 3)
             if channel_exist and channel:
                 filtered_search_results.append(channel)
                 logger.info(f"{i}/{len(search_results)} channel {channel} EXIST!")
@@ -87,12 +93,14 @@ async def telegram_parsing_handler(user: types.User, queries: list[str], limit=1
         return set(filtered_search_results)
 
 
-async def check_channel_existence(url):
+async def check_channel_existence(url, retries):
     url = url.replace("t.me/", "t.me/s/")
-
+    headers = {
+        'User-Agent': user_agent.random,
+    }
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
+            async with session.get(url, headers=headers) as response:
                 response.raise_for_status()
                 html_content = await response.text()
                 soup = BeautifulSoup(html_content, "lxml")
@@ -101,5 +109,10 @@ async def check_channel_existence(url):
                     return True
                 return False
     except aiohttp.ClientError as e:
-        logger.error(f"An error occurred: {e}")
-        return False
+        logger.error(f"url {url}. An error occurred: {e}")
+        if retries <= 0:
+            return False
+        logger.info("Retry")
+        await check_channel_existence(url, retries - 1)
+
+
