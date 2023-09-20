@@ -9,14 +9,14 @@ services:
     env_file:
       - ./.env
     environment:
-      - SE_WEBDRIVER_URL=http://standalone-chrome:4444
+      - SE_WEBDRIVER_URL=http://selenium-hub:4444
       - REDIS_MASTER_HOST=redis
     volumes:
       - ./src/core:/app/core
       - ./src/bot:/app/bot
     depends_on:
       - redis
-      - standalone-chrome
+      - selenium-hub
     restart: always
   redis:
     image: redis/redis-stack-server:latest
@@ -26,13 +26,36 @@ services:
     ports:
       - "6379"
     restart: always
-  standalone-chrome:
-    image: selenium/standalone-chrome
-    hostname: standalone-chrome
-    environment:
-      - SE_NODE_MAX_SESSIONS=3
-      - SE_NODE_SESSION_TIMEOUT=30
+  selenium-hub:
+    image: selenium/hub
+    hostname: selenium-hub
     ports:
-      - "4440-4444:4440-4444"
-    shm_size: '4g'
-    restart: on-failure
+      - "4441-4444:4441-4444"
+#    environment:
+    #  - SE_NODE_MAX_SESSIONS=2
+    #  - SE_SESSION_RETRY_INTERVAL=2
+    #  - SE_SESSION_REQUEST_TIMEOUT=600
+    #  - SE_NODE_SESSION_TIMEOUT=600
+    #  - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+#      - START_XVFB=false
+    depends_on:
+      - chrome-node1
+      - chrome-node2
+  chrome-node1:
+    image: selenium/node-chrome
+    environment:
+      - SE_NODE_SESSION_TIMEOUT=20
+      - SE_NODE_MAX_SESSIONS=1
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4441
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+    shm_size: "1g"
+  chrome-node2:
+    image: selenium/node-chrome
+    environment:
+      - SE_NODE_SESSION_TIMEOUT=20
+      - SE_NODE_MAX_SESSIONS=1
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+    shm_size: "1g"

@@ -15,5 +15,6 @@ async def startup_bot(dp: Dispatcher) -> None:
 
 
 async def shutdown_bot(dp: Dispatcher) -> None:
+    logger.info("Shutdown selenium_webdriver")
     await dp.storage.close()
     logger.info("Shutdown bot")

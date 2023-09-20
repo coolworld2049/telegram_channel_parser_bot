@@ -16,3 +16,5 @@ selenium
 selenium_recaptcha_solver
 webdriver_manager
 BeautifulSoup4
+lxml
+fake_useragent
