@@ -65,7 +65,7 @@ async def telegram_parsing_handler(
             chat_id=user.id,
         ):
             lyzem_channels = search_channels_lyzem(
-                selenium_webdriver, query, limit, max_page_number=1, per_page=50
+                selenium_webdriver, query, limit, max_page_number=1
             )
             for lch in lyzem_channels:
                 search_results.add(lch)
@@ -109,7 +109,7 @@ async def telegram_parsing_handler(
         return filtered_search_results
 
 
-async def check_channel_existence(url, retries=3, *, min_subscribers=1):
+async def check_channel_existence(url, retries=3, *, min_subscribers):
     headers = {
         "User-Agent": user_agent.random,
     }
@@ -124,6 +124,7 @@ async def check_channel_existence(url, retries=3, *, min_subscribers=1):
                     tgme_page_extra
                     and "no members" not in tgme_page_extra.text
                     and "@" not in tgme_page_extra.text
+                    and "no subscribers" not in tgme_page_extra
                 ):
                     subscribers_counter_str = tgme_page_extra.text.split(" ")[0]
                     subscribers_counter = 0

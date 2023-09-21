@@ -53,7 +53,7 @@ def parse_lyzem_page(html):
     return channels
 
 
-def search_channels_lyzem(driver, query: str, limit, max_page_number, per_page):
+def search_channels_lyzem(driver, query: str, limit, max_page_number, per_page=100):
     base_url = "https://lyzem.com/search?f=channels&l=%3Aru&per-page=100&q="
     base_url = base_url.replace("&per-page=100", f"&per-page={per_page}")
     initial_request_url = base_url + urllib.parse.quote(query)
