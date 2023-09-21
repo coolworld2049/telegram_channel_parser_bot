@@ -58,6 +58,7 @@ async def telegram_parsing_handler(
             user.id, "Wait for the previous selenium session to complete"
         )
     try:
+        max_page_number = 1 if limit <= 100 else 2
         for i, query in tqdm(  # noqa
             enumerate(queries),
             total=len(queries),
@@ -65,7 +66,7 @@ async def telegram_parsing_handler(
             chat_id=user.id,
         ):
             lyzem_channels = search_channels_lyzem(
-                selenium_webdriver, query, limit, max_page_number=1
+                selenium_webdriver, query, limit, max_page_number=max_page_number
             )
             for lch in lyzem_channels:
                 search_results.add(lch)
