@@ -17,7 +17,7 @@ logger.add(
     backtrace=True,
     encoding="utf-8",
     enqueue=True,
-    rotation="32 MB",
+    rotation="50 MB",
     retention="7 days",
 )
 

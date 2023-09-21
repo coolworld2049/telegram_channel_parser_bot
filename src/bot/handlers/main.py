@@ -1,3 +1,4 @@
+import os
 import pathlib
 from contextlib import suppress
 
@@ -54,11 +55,11 @@ async def start_callback(
 
 @router.message(Command("logs"))
 async def start_message(message: Message, state: FSMContext):
-    logs = BufferedInputFile(
-            file=pathlib.Path(__file__)
-            .parent.parent.joinpath(".logs/access.log")
-            .read_bytes(),
-            filename="access.log",
+    path = pathlib.Path(__file__).parent.parent.joinpath(".logs")
+    target_file = min(path.iterdir(), key=os.path.getctime)
+    if target_file:
+        logs = BufferedInputFile(
+            file=target_file.read_bytes(),
+            filename=target_file.name,
         )
-    if logs.data != b"":
         await message.answer_document(document=logs, caption="Logs")
