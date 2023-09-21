@@ -41,7 +41,9 @@ async def selenium_remote_sessions(path="status"):
         return []
 
 
-async def telegram_parsing_handler(user: types.User, queries: list[str], limit=100):
+async def telegram_parsing_handler(
+    user: types.User, queries: list[str], limit=100, min_subscribers=1
+):
     search_results = []
     filtered_search_results = []
 
@@ -90,10 +92,14 @@ async def telegram_parsing_handler(user: types.User, queries: list[str], limit=1
             chat_id=user.id,
         ):
             await asyncio.sleep(random.randint(1, 2) / 10)
-            channel_exist = await check_channel_existence(channel, 3)
+            channel_exist = await check_channel_existence(
+                channel, 3, min_subscribers=min_subscribers
+            )
             if channel_exist and channel and channel not in filtered_search_results:
                 filtered_search_results.append(channel)
-                logger.info(f"{i}/{len(search_results)} channel {channel} EXIST! unique_filtered_search_results {len(filtered_search_results)}")
+                logger.info(
+                    f"{i}/{len(search_results)} channel {channel} EXIST! unique_filtered_search_results {len(filtered_search_results)}"
+                )
             else:
                 logger.info(f"{i}/{len(search_results)} channel {channel} not found")
     except Exception as e:
@@ -102,24 +108,41 @@ async def telegram_parsing_handler(user: types.User, queries: list[str], limit=1
         return set(filtered_search_results)
 
 
-async def check_channel_existence(url, retries):
-    url = url.replace("t.me/", "t.me/s/")
+async def check_channel_existence(url, retries=3, *, min_subscribers=1):
+    new_url = url.replace("t.me/", "t.me/s/")
     headers = {
         "User-Agent": user_agent.random,
     }
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers) as response:
+            async with session.get(new_url, headers=headers) as response:
                 response.raise_for_status()
                 html_content = await response.text()
                 soup = BeautifulSoup(html_content, "lxml")
                 link = soup.find("a", class_="tgme_header_link")
                 if link:
-                    return True
+                    subscribers_counter_str = link.find(
+                        "div", attrs={"tgme_header_counter"}
+                    ).text.split(" ")[0]
+                    subscribers_counter = 0
+                    if "K" not in subscribers_counter_str:
+                        subscribers_counter = int(subscribers_counter_str)
+                    else:
+                        number = subscribers_counter_str.split("K")[0]
+                        subscribers_counter = int(float(number) * 1000)
+                    logger.info(
+                        f"url {new_url} subscribers_counter_str: {subscribers_counter_str}; subscribers_counter: {subscribers_counter}; min_subscribers: {min_subscribers}"
+                    )
+                    if subscribers_counter >= min_subscribers:
+                        return True
+                    else:
+                        return False
                 return False
     except aiohttp.ClientError as e:
-        logger.error(f"url {url}. An error occurred: {e}")
+        logger.error(f"url {new_url}. An error occurred: {e}")
         if retries <= 0:
             return False
         logger.info("Retry")
-        await check_channel_existence(url, retries - 1)
+        await check_channel_existence(
+            new_url, retries - 1, min_subscribers=min_subscribers
+        )

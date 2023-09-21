@@ -11,9 +11,9 @@ from bot.cse.main import telegram_parsing_handler
 from bot.cse.query_builder import get_generated_search_queries
 from bot.keyboards.search import search_keyboard_builder
 from bot.loader import bot
+from bot.settings import get_settings
 from bot.states import SearchState
 from bot.template_engine import render_template
-from bot.settings import get_settings
 
 router = Router(name=__file__)
 
@@ -22,26 +22,47 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
     with suppress(TelegramBadRequest, TypeError):
         await bot.delete_message(user.id, message_id - 1)
     state_data = await state.get_data()
-    search_queries = state_data.get("search_queries") or []
-    await state.update_data(search_queries=search_queries)
-    limit_per_query = state_data.get("limit") or 100
+    search_queries: list[list[str]] = state_data.get("search_queries") or []
+    limit_per_query = state_data.get("limit_per_query") or 10
+    min_subscribers = state_data.get("min_subscribers") or 10
+    await state.update_data(
+        search_queries=search_queries,
+        limit_per_query=limit_per_query,
+        min_subscribers=min_subscribers,
+    )
+
     keywords = [", ".join(x) for i, x in enumerate(search_queries)]
     keywords.sort(key=lambda x: len(x))
     keywords_length = sum([len(x) for x in keywords])
     if keywords_length > 4096 - 144:
         keywords[-1] = f"{keywords[-1][:500]}..."
-    generated_search_queries = list(get_generated_search_queries(search_queries))
+
+    generated_search_queries = get_generated_search_queries(*search_queries)
+
     text = render_template(
         "search_menu.html",
         query_count=len(generated_search_queries),
         limit_per_query=limit_per_query,
+        min_subscribers=min_subscribers,
         keywords=enumerate(keywords),
     )
-    await bot.send_message(
-        user.id,
-        text,
-        reply_markup=search_keyboard_builder().as_markup(),
+    generated_search_queries_txt = BufferedInputFile(
+        "\n".join(generated_search_queries).encode("utf-8"),
+        filename="generated_search_queries.txt",
     )
+    if generated_search_queries_txt.data != b"":
+        await bot.send_document(
+            user.id,
+            document=generated_search_queries_txt,
+            caption=text,
+            reply_markup=search_keyboard_builder().as_markup(),
+        )
+    else:
+        await bot.send_message(
+            user.id,
+            text,
+            reply_markup=search_keyboard_builder().as_markup(),
+        )
 
 
 @router.message(Command("search"))
@@ -59,13 +80,17 @@ async def start_searching(
     query: types.CallbackQuery, callback_data: MenuCallback, state: FSMContext
 ):
     state_data = await state.get_data()
-    search_queries = state_data.get("search_queries")
+    search_queries: list[list[str]] = state_data.get("search_queries")
+    min_subscribers = state_data.get("min_subscribers")
     if not search_queries:
         await query.answer("There are no keywords list")
         return None
-    generated_queries = get_generated_search_queries(search_queries)
+    generated_queries = get_generated_search_queries(*search_queries)
     channels = await telegram_parsing_handler(
-        query.from_user, generated_queries, limit=state_data.get("limit") or 100
+        query.from_user,
+        generated_queries,
+        limit=state_data.get("limit_per_query") or 20,
+        min_subscribers=min_subscribers,
     )
     if not channels:
         await bot.send_message(query.from_user.id, "No channels found")
@@ -106,9 +131,27 @@ async def change_search_limit(
 @router.message(SearchState.change_limit)
 async def change_search_limit_state(message: types.Message, state: FSMContext):
     try:
-        await state.update_data(limit=int(message.text))
+        await state.update_data(limit_per_query=int(message.text))
     except Exception as e:
         await message.answer("Limit must be an integer")
+        await state.clear()
+    await start_search_handler(message.from_user, state, message.message_id)
+
+
+@router.callback_query(MenuCallback.filter(F.name == "change-min-subscribers"))
+async def change_min_subscribers(
+    query: types.CallbackQuery, callback_data: MenuCallback, state: FSMContext
+):
+    await query.answer("Enter a limit per query")
+    await state.set_state(SearchState.change_min_subscribers)
+
+
+@router.message(SearchState.change_min_subscribers)
+async def change_min_subscribers_state(message: types.Message, state: FSMContext):
+    try:
+        await state.update_data(min_subscribers=int(message.text))
+    except Exception as e:
+        await message.answer("Min subscribers must be an integer")
         await state.clear()
     await start_search_handler(message.from_user, state, message.message_id)
 
