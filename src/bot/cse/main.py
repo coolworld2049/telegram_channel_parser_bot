@@ -74,6 +74,7 @@ async def telegram_parsing_handler(
                 {
                     "index": i,
                     "query": query,
+                    "current_query_channels": len(set(lyzem_channels)),
                     "unique_channels": len(set(search_results)),
                 }
             )
@@ -97,11 +98,12 @@ async def telegram_parsing_handler(
             )
             if channel_exist and channel and channel not in filtered_search_results:
                 filtered_search_results.append(channel)
-                logger.info(
-                    f"{i}/{len(search_results)} channel {channel} EXIST! unique_filtered_search_results {len(filtered_search_results)}"
-                )
+                logger.info(f"{i}/{len(search_results)} channel {channel} ADDED")
             else:
-                logger.info(f"{i}/{len(search_results)} channel {channel} not found")
+                logger.info(f"{i}/{len(search_results)} channel {channel} EXCLUDED")
+            logger.info(
+                {"unique_filtered_search_results": len(filtered_search_results)}
+            )
     except Exception as e:
         logger.error(e)
     finally:
@@ -137,12 +139,11 @@ async def check_channel_existence(url, retries=3, *, min_subscribers=1):
                         return True
                     else:
                         return False
-                return False
+                else:
+                    return False
     except aiohttp.ClientError as e:
         logger.error(f"url {new_url}. An error occurred: {e}")
         if retries <= 0:
             return False
-        logger.info("Retry")
-        await check_channel_existence(
-            new_url, retries - 1, min_subscribers=min_subscribers
-        )
+        logger.info(f"url {new_url}. Retry")
+        await check_channel_existence(url, retries - 1, min_subscribers=min_subscribers)

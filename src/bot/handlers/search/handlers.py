@@ -23,8 +23,8 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
         await bot.delete_message(user.id, message_id - 1)
     state_data = await state.get_data()
     search_queries: list[list[str]] = state_data.get("search_queries") or []
-    limit_per_query = state_data.get("limit_per_query") or 10
-    min_subscribers = state_data.get("min_subscribers") or 10
+    limit_per_query = state_data.get("limit_per_query") or 20
+    min_subscribers = state_data.get("min_subscribers") or 100
     await state.update_data(
         search_queries=search_queries,
         limit_per_query=limit_per_query,
@@ -35,7 +35,7 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
     keywords.sort(key=lambda x: len(x))
     keywords_length = sum([len(x) for x in keywords])
     if keywords_length > 4096 - 144:
-        keywords[-1] = f"{keywords[-1][:500]}..."
+        keywords[-1] = f"{keywords[-1][:200]}..."
 
     generated_search_queries = get_generated_search_queries(*search_queries)
 
@@ -81,6 +81,7 @@ async def start_searching(
 ):
     state_data = await state.get_data()
     search_queries: list[list[str]] = state_data.get("search_queries")
+    limit_per_query = state_data.get("limit_per_query")
     min_subscribers = state_data.get("min_subscribers")
     if not search_queries:
         await query.answer("There are no keywords list")
@@ -89,7 +90,7 @@ async def start_searching(
     channels = await telegram_parsing_handler(
         query.from_user,
         generated_queries,
-        limit=state_data.get("limit_per_query") or 20,
+        limit=limit_per_query,
         min_subscribers=min_subscribers,
     )
     if not channels:
@@ -182,12 +183,12 @@ async def delete_search_query(
 ):
     state_data = await state.get_data()
     search_queries: list[list] = state_data.get("search_queries")
-    if len(search_queries) > 1:
-        await query.answer("Enter index of the list of keywords to delete")
-        await state.set_state(SearchState.delete)
-    else:
+    if not search_queries:
         await query.answer("The list of keywords is empty!")
         await state.clear()
+    elif len(search_queries) > 1:
+        await query.answer("Enter index of the list of keywords to delete")
+        await state.set_state(SearchState.delete)
 
 
 @router.message(SearchState.delete)
@@ -211,14 +212,14 @@ async def replace_search_query(
 ):
     state_data = await state.get_data()
     search_queries: list[list] = state_data.get("search_queries")
+    if not search_queries:
+        await state.clear()
+        await query.answer("The list of keywords is empty!")
     if len(search_queries) > 1:
         await query.answer(
             "Enter a list of keywords separated by `,` to replace. Example: 0 - a,b,c"
         )
         await state.set_state(SearchState.replace)
-    else:
-        await state.clear()
-        await query.answer("The list of keywords is empty!")
 
 
 @router.message(SearchState.replace)
