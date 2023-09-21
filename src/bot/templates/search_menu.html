@@ -1,7 +1,10 @@
 <b>Search Menu</b>
+
 query count — <code>{{ query_count }}</code>
-query levels — <code>{{ max_query_levels }}</code>
 limit per query — <code>{{ limit_per_query }}</code>
 min subscribers — <code>{{ min_subscribers }}</code>
+max query levels — {{ max_query_levels }}
 {% for i, k in keywords %}
 <code>{{ i }} - {{ k }}</code>{% endfor %}
+
+keyword_ids — {{ keyword_ids }}
