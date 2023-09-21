@@ -120,7 +120,11 @@ async def check_channel_existence(url, retries=3, *, min_subscribers=1):
                 html_content = await response.text()
                 soup = BeautifulSoup(html_content, "lxml")
                 tgme_page_extra = soup.find("div", attrs="tgme_page_extra")
-                if tgme_page_extra and ["@", "no members"] not in tgme_page_extra.text:
+                if (
+                    tgme_page_extra
+                    and "no members" not in tgme_page_extra.text
+                    and "@" not in tgme_page_extra.text
+                ):
                     subscribers_counter_str = tgme_page_extra.text.split(" ")[0]
                     subscribers_counter = 0
                     if "K" not in subscribers_counter_str:

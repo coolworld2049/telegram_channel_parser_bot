@@ -47,6 +47,7 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
             with suppress(IndexError):
                 new_keywords.append(keywords[k][: total_length - total_length_limit])
             break
+    new_keywords.reverse()
     generated_search_queries = get_generated_search_queries(*search_queries)
     text = render_template(
         "search_menu.html",
