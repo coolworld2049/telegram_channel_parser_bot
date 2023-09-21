@@ -1,10 +1,13 @@
+from loguru import logger
+
+
 def get_generated_search_queries(*lists):
     if not lists:
         return []
 
     concatenated_strings = [""]
 
-    for lst in lists:
+    for l, lst in enumerate(lists):
         temp_concatenated_strings = []
 
         for item in lst:
@@ -14,8 +17,10 @@ def get_generated_search_queries(*lists):
         temp_concatenated_strings = list(
             map(lambda x: str(x).lstrip(), temp_concatenated_strings)
         )
+        logger.debug(f"Current list index {l}")
         concatenated_strings = temp_concatenated_strings
     concatenated_strings.sort()
+    logger.debug(f"End")
     return concatenated_strings
 
 

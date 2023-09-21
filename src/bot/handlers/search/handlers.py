@@ -24,6 +24,7 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
     state_data = await state.get_data()
     search_queries: list[list[str]] = state_data.get("search_queries") or []
     limit_per_query = state_data.get("limit_per_query") or 20
+    max_query_levels = len(search_queries)
     min_subscribers = state_data.get("min_subscribers") or 100
     await state.update_data(
         search_queries=search_queries,
@@ -31,24 +32,37 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
         min_subscribers=min_subscribers,
     )
 
+    if max_query_levels > 3:
+        await bot.send_message(
+            user.id, "You have exceeded the maximum number of request levels 3"
+        )
+        await state.update_data(search_queries=search_queries[:max_query_levels])
+        await start_search_handler(user, state, message_id)
     keywords = [", ".join(x) for i, x in enumerate(search_queries)]
     keywords.sort(key=lambda x: len(x))
-    keywords_length = sum([len(x) for x in keywords])
-    if keywords_length > 4096 - 144:
-        keywords[-1] = f"{keywords[-1][:200]}..."
-
+    total_length = 0
+    total_length_limit = 4000
+    new_keywords = []
+    for k, item in enumerate(keywords):
+        total_length += len(item)
+        if total_length >= total_length_limit:
+            new_keywords = keywords[:k]
+            with suppress(IndexError):
+                new_keywords.append(keywords[k][: len(keywords[0])])
+    new_keywords[-1] += " ..."
     generated_search_queries = get_generated_search_queries(*search_queries)
 
     text = render_template(
         "search_menu.html",
         query_count=len(generated_search_queries),
+        max_query_levels=max_query_levels,
         limit_per_query=limit_per_query,
         min_subscribers=min_subscribers,
-        keywords=enumerate(keywords),
+        keywords=enumerate(new_keywords),
     )
     generated_search_queries_txt = BufferedInputFile(
         "\n".join(generated_search_queries).encode("utf-8"),
-        filename="generated_search_queries.txt",
+        filename="queries.txt",
     )
     if generated_search_queries_txt.data != b"":
         await bot.send_document(
