@@ -54,11 +54,11 @@ async def start_callback(
 
 @router.message(Command("logs"))
 async def start_message(message: Message, state: FSMContext):
-    await message.answer_document(
-        BufferedInputFile(
+    logs = BufferedInputFile(
             file=pathlib.Path(__file__)
             .parent.parent.joinpath(".logs/access.log")
             .read_bytes(),
             filename="access.log",
         )
-    )
+    if logs.data != b"":
+        await message.answer_document(document=logs, caption="Logs")
