@@ -6,6 +6,7 @@ class SearchState(StatesGroup):
     delete = State()
     replace = State()
     change_limit = State()
+    change_min_subscribers = State()
 
 
 class SessionState(StatesGroup):

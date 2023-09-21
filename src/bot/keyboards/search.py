@@ -24,6 +24,14 @@ def search_keyboard_builder():
     )
     builder.row(
         InlineKeyboardButton(
+            text="Set min subscribers",
+            callback_data=MenuCallback(
+                name="change-min-subscribers",
+            ).pack(),
+        ),
+    )
+    builder.row(
+        InlineKeyboardButton(
             text="➕",
             callback_data=MenuCallback(
                 name="extend-search-queries",

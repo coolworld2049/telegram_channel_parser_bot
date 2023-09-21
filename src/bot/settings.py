@@ -15,6 +15,7 @@ class BotSettings(BaseSettings):
         BotCommand(
             command="/search", description="Search telegram channels by keywords"
         ),
+        BotCommand(command="/logs", description="Access logs"),
     ]
     BOT_ACL: list[int] = []
     BOT_ACL_ENABLED: bool = False

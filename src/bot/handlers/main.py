@@ -1,10 +1,12 @@
+import os
+import pathlib
 from contextlib import suppress
 
 from aiogram import Router, F, types
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command, ExceptionTypeFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import User, Message, CallbackQuery, ErrorEvent
+from aiogram.types import User, Message, CallbackQuery, ErrorEvent, BufferedInputFile
 from loguru import logger
 
 from bot.callbacks import MenuCallback
@@ -49,3 +51,15 @@ async def start_callback(
     with suppress(TelegramBadRequest):
         await query.message.delete()
     await start_handler(query.from_user, state, query.message.message_id)
+
+
+@router.message(Command("logs"))
+async def start_message(message: Message, state: FSMContext):
+    path = pathlib.Path(__file__).parent.parent.joinpath(".logs")
+    target_file = min(path.iterdir(), key=os.path.getctime)
+    if target_file:
+        logs = BufferedInputFile(
+            file=target_file.read_bytes(),
+            filename=target_file.name,
+        )
+        await message.answer_document(document=logs, caption="Logs")
