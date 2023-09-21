@@ -23,9 +23,13 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
         await bot.delete_message(user.id, message_id - 1)
     state_data = await state.get_data()
     search_queries: list[list[str]] = state_data.get("search_queries") or []
-    limit_per_query = state_data.get("limit_per_query") or 50
-    max_query_levels = 3
-    min_subscribers = state_data.get("min_subscribers") or 100
+    limit_per_query = (
+        state_data.get("limit_per_query") or get_settings().DEFAULT_LIMIT_PER_QUERY
+    )
+    max_query_levels = get_settings().DEFAULT_MAX_QUERY_LEVELS
+    min_subscribers = (
+        state_data.get("min_subscribers") or get_settings().DEFAULT_MIN_SUBSCRIBERS
+    )
 
     await state.update_data(
         search_queries=search_queries,
@@ -34,7 +38,6 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
     )
 
     keywords = [", ".join(x) for i, x in enumerate(search_queries)]
-    keywords.sort(key=lambda x: len(x))
     total_length = 0
     total_length_limit = 3000
     new_keywords = []
@@ -47,7 +50,6 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
             with suppress(IndexError):
                 new_keywords.append(keywords[k][: total_length - total_length_limit])
             break
-    new_keywords.reverse()
     generated_search_queries = get_generated_search_queries(*search_queries)
     text = render_template(
         "search_menu.html",
@@ -102,20 +104,15 @@ async def start_searching(
         channels_count=len(channels),
     )
     input = BufferedInputFile(
-        "\n".join(list(map(lambda x: ", ".join(x), search_queries))).encode("utf-8"),
+        "\n\n".join(list(map(lambda x: ", ".join(x), search_queries))).encode("utf-8"),
         filename="input.txt",
     )
     output = BufferedInputFile("\n".join(channels).encode("utf-8"), "output.txt")
-    names = BufferedInputFile(
-        "\n".join(map(lambda x: x.split("/")[-1], channels)).encode("utf-8"),
-        filename="names.txt",
-    )
     await bot.send_media_group(
         query.from_user.id,
         media=[
             InputMediaDocument(media=input),
-            InputMediaDocument(media=output),
-            InputMediaDocument(media=names, caption=caption),
+            InputMediaDocument(media=output, caption=caption),
         ],
     )
     await bot.send_message(query.from_user.id, caption)
@@ -135,7 +132,6 @@ async def change_search_limit_state(message: types.Message, state: FSMContext):
         await state.update_data(limit_per_query=int(message.text))
     except Exception as e:
         await message.answer("Limit must be an integer")
-        await state.clear()
     await start_search_handler(message.from_user, state, message.message_id)
 
 
@@ -152,8 +148,7 @@ async def change_min_subscribers_state(message: types.Message, state: FSMContext
     try:
         await state.update_data(min_subscribers=int(message.text))
     except Exception as e:
-        await message.answer("Min subscribers must be an integer")
-        await state.clear()
+        await message.answer("Minimal subscribers must be an integer")
     await start_search_handler(message.from_user, state, message.message_id)
 
 
@@ -171,6 +166,14 @@ async def extend_search_queries_state(message: types.Message, state: FSMContext)
         await bot.delete_message(message.from_user.id, message.message_id - 1)
     state_data = await state.get_data()
     search_queries: list[list] = state_data.get("search_queries") or []
+
+    if len(search_queries) > abs(get_settings().DEFAULT_MAX_QUERY_LEVELS - 1):
+        await message.answer(
+            f"No keywords were added because the maximum"
+            f" number of keyword levels is {get_settings().DEFAULT_MAX_QUERY_LEVELS}",
+        )
+        await start_search_handler(message.from_user, state, message.message_id)
+        return
     new_search_queries = [s.strip() for s in message.text.split(",")]
     search_queries.append(new_search_queries)
     await state.update_data(search_queries=search_queries)
@@ -185,7 +188,6 @@ async def delete_search_query(
     search_queries: list[list] = state_data.get("search_queries")
     if not search_queries:
         await query.answer("The list of keywords is empty!")
-        await state.clear()
     elif len(search_queries) > 1:
         await query.answer("Enter index of the list of keywords to delete")
         await state.set_state(SearchState.delete)
@@ -202,7 +204,6 @@ async def delete_search_query_state(message: types.Message, state: FSMContext):
         await state.update_data(search_queries=search_queries)
     except Exception as e:
         await message.answer(f"Exception: {e}")
-        await state.clear()
     await start_search_handler(message.from_user, state, message.message_id)
 
 
@@ -213,7 +214,6 @@ async def replace_search_query(
     state_data = await state.get_data()
     search_queries: list[list] = state_data.get("search_queries")
     if not search_queries:
-        await state.clear()
         await query.answer("The list of keywords is empty!")
     if len(search_queries) > 1:
         await query.answer(
@@ -234,7 +234,6 @@ async def replace_search_query_state(message: types.Message, state: FSMContext):
         await state.update_data(search_queries=search_queries)
     except Exception as e:
         await message.answer(f"Exception: {e}")
-        await state.clear()
     await start_search_handler(message.from_user, state, message.message_id)
 
 
