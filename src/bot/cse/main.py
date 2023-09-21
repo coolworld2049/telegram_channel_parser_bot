@@ -42,7 +42,7 @@ async def selenium_remote_sessions(path="status"):
 
 
 async def telegram_parsing_handler(
-    user: types.User, queries: list[str], limit=100, min_subscribers=1
+    user: types.User, queries: list[str], limit, min_subscribers
 ):
     search_results = set()
     filtered_search_results = set()
@@ -65,9 +65,7 @@ async def telegram_parsing_handler(
             chat_id=user.id,
         ):
             lyzem_channels = search_channels_lyzem(
-                selenium_webdriver,
-                query,
-                limit,
+                selenium_webdriver, query, limit, max_page_number=1, per_page=50
             )
             for lch in lyzem_channels:
                 search_results.add(lch)
@@ -122,7 +120,7 @@ async def check_channel_existence(url, retries=3, *, min_subscribers=1):
                 html_content = await response.text()
                 soup = BeautifulSoup(html_content, "lxml")
                 tgme_page_extra = soup.find("div", attrs="tgme_page_extra")
-                if tgme_page_extra:
+                if tgme_page_extra and ["@", "no members"] not in tgme_page_extra.text:
                     subscribers_counter_str = tgme_page_extra.text.split(" ")[0]
                     subscribers_counter = 0
                     if "K" not in subscribers_counter_str:
@@ -139,7 +137,7 @@ async def check_channel_existence(url, retries=3, *, min_subscribers=1):
                         return False
                 else:
                     return False
-    except aiohttp.ClientError as e:
+    except Exception as e:
         logger.error(f"url {url}. An error occurred: {e}")
         if retries <= 0:
             return False

@@ -23,7 +23,7 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
         await bot.delete_message(user.id, message_id - 1)
     state_data = await state.get_data()
     search_queries: list[list[str]] = state_data.get("search_queries") or []
-    limit_per_query = state_data.get("limit_per_query") or 20
+    limit_per_query = state_data.get("limit_per_query") or 50
     max_query_levels = 3
     min_subscribers = state_data.get("min_subscribers") or 100
 
@@ -38,9 +38,9 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
     total_length = 0
     total_length_limit = 3000
     new_keywords = []
+    if sum([len(x) for x in keywords]) <= total_length_limit:
+        new_keywords = keywords
     for k, item in enumerate(keywords):
-        if total_length <= total_length_limit and len(keywords) == 1:
-            new_keywords = keywords
         total_length += len(item)
         if total_length >= total_length_limit:
             new_keywords = keywords[:k]
