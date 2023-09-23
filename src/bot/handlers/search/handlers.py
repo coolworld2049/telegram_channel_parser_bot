@@ -82,6 +82,7 @@ async def start_searching(
         await query.answer("There are no keywords list")
         return None
     generated_queries = generate_search_queries(*search_queries)
+    generated_queries = [f"site:t.me {x}" for x in generated_queries]
     channels = await ddg_parsing_handler(
         query.from_user,
         generated_queries,
@@ -101,10 +102,14 @@ async def start_searching(
         "\n".join(generated_queries).encode("utf-8"),
         filename="queries.txt",
     )
-    output_save_dir = pathlib.Path(__file__).parent.parent.parent.joinpath(pathlib.Path("data"))
+    output_save_dir = pathlib.Path(__file__).parent.parent.parent.joinpath(
+        pathlib.Path("data")
+    )
     output_save_dir.mkdir(exist_ok=True)
     output = BufferedInputFile("\n".join(channels).encode("utf-8"), "output.txt")
-    output_save_dir.joinpath(output.filename.replace(".txt", ".md")).write_bytes(output.data)
+    output_save_dir.joinpath(output.filename.replace(".txt", ".md")).write_bytes(
+        output.data
+    )
     await bot.send_media_group(
         query.from_user.id,
         media=[
@@ -127,7 +132,7 @@ async def change_min_subscribers(
 async def change_min_subscribers_state(message: types.Message, state: FSMContext):
     try:
         await state.update_data(min_subscribers=int(message.text))
-    except Exception as e: # noqa
+    except Exception as e:  # noqa
         await message.answer("Minimal subscribers must be an integer")
     await start_search_handler(message.from_user, state, message.message_id)
 

@@ -1,5 +1,6 @@
 import asyncio
 import sys
+from asyncio import CancelledError
 
 from loguru import logger
 
@@ -29,6 +30,10 @@ async def main():
         await dp.start_polling(bot)
     except Exception as e:
         logger.exception(e)
+    except KeyboardInterrupt:
+        pass
+    except CancelledError:
+        pass
     finally:
         await shutdown_bot(dp)
 
