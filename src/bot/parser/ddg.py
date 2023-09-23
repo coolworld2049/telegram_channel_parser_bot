@@ -92,7 +92,7 @@ async def ddg_parsing(
             for r in ddgs.text(query, safesearch="on", backend="api"):
                 search_result.append(r)
         logger.info({"query": query, "search_result": len(search_result)})
-        for sr in search_result[:20]:
+        for sr in search_result[:10]:
             usp = urlsplit(sr["href"])
             if usp.query:
                 usp = urlsplit(usp.geturl().replace(f"?{usp.query}", ""))
@@ -121,7 +121,7 @@ async def ddg_parsing(
                 "unique_filtered_result": len(unique_result),
             }
         )
-        return search_result, unique_result
+        return {query: search_result}, unique_result
     except Exception as e:
         logger.error(f"{query}. Exception: {e}")
         if retries <= 0:
@@ -135,19 +135,23 @@ async def ddg_parsing(
 async def ddg_parsing_handler(
     user: types.User, queries: list[str], min_subscribers: int
 ):
-    raw_result = []
-    result = set()
+    raw_results = []
+    results = set()
     for i, query in tqdm(  # noqa
         enumerate(queries),
         total=len(queries),
         token=get_settings().BOT_TOKEN,
         chat_id=user.id,
     ):
+        logger.info(" ")
         logger.info(f"index {i}. START")
         unique_result = set()
         try:
-            raw_result, unique_result = await ddg_parsing(query, min_subscribers=min_subscribers)
-            result = result.union(unique_result)
+            raw_result, unique_result = await ddg_parsing(
+                query, min_subscribers=min_subscribers
+            )
+            raw_results.append(raw_result)
+            results = results.union(unique_result)
         except Exception as e:
             logger.error(e)
         logger.info(
@@ -155,10 +159,9 @@ async def ddg_parsing_handler(
                 "index": i,
                 "query": query,
                 "links": len(unique_result) if unique_result is not None else None,
-                "all_links": len(result),
+                "all_links": len(results),
                 "min_subscribers": min_subscribers,
             }
         )
-        logger.info(" ")
         logger.info(f"index {i}. END")
-    return result, raw_result
+    return results, raw_results
