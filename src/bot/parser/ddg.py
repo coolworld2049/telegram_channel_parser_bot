@@ -6,7 +6,7 @@ import aiohttp
 from aiogram import types
 from bs4 import BeautifulSoup
 from duckduckgo_search import DDGS
-from fake_useragent import FakeUserAgent
+from fake_useragent import FakeUserAgent, UserAgent
 from loguru import logger
 from tqdm.contrib.telegram import tqdm
 
@@ -81,7 +81,8 @@ async def ddg_parsing(
     **kwargs,
 ):
     unique_result = set()
-    user_agent = FakeUserAgent()
+    user_agent = UserAgent(min_percentage=1.1)
+
     headers = {"User-Agent": user_agent.random}
     try:
         logger.info({"query": query})
@@ -89,7 +90,7 @@ async def ddg_parsing(
         with DDGS(headers=headers, timeout=timeout) as ddgs:
             await asyncio.sleep(0.75)
             logger.debug("sleep 0.75")
-            for r in ddgs.text(query, backend=random.choice(["api", "html"])):
+            for r in ddgs.text(query, safesearch="on", backend="api"):
                 search_result.append(r)
         logger.info({"query": query, "search_result": len(search_result)})
         for sr in search_result[:20]:
@@ -98,12 +99,13 @@ async def ddg_parsing(
                 usp = urlsplit(usp.geturl().replace(f"?{usp.query}", ""))
             url = usp.geturl()
             unique_result.add(url)
-        for unique_url in unique_result.copy():
+        for i, unique_url in enumerate(unique_result.copy()):
             filter_result = await filter_parsing_result(
                 unique_url,
                 **kwargs,
             )
             log_msg = {
+                "i": i,
                 "url": unique_url,
                 "filter": kwargs,
                 "filter_result": filter_result,
@@ -127,7 +129,8 @@ async def ddg_parsing(
             logger.exception(e)
             raise e
         logger.info(f"{query}. Retry")
-        await ddg_parsing(query, retries - 1, timeout + 5, **kwargs)
+        await asyncio.sleep(timeout)
+        await ddg_parsing(query, retries - 1, timeout + 1, **kwargs)
 
 
 async def ddg_parsing_handler(
@@ -151,7 +154,7 @@ async def ddg_parsing_handler(
             {
                 "index": i,
                 "query": query,
-                "links": len(links) if not links else None,
+                "links": len(links) if links is not None else None,
                 "all_links": len(result),
                 "min_subscribers": min_subscribers,
             }

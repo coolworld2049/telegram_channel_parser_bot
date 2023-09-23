@@ -17,6 +17,6 @@ selenium_recaptcha_solver
 webdriver_manager
 BeautifulSoup4
 lxml
-fake_useragent
+fake_useragent==1.2.1
 
 duckduckgo_search
