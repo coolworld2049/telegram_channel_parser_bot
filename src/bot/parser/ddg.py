@@ -1,5 +1,4 @@
 import asyncio
-import random
 from urllib.parse import urlsplit
 
 import aiohttp
@@ -80,13 +79,13 @@ async def ddg_parsing(
     timeout: float = 10,
     **kwargs,
 ):
+    search_result = []
     unique_result = set()
     user_agent = UserAgent(min_percentage=1.1)
 
     headers = {"User-Agent": user_agent.random}
     try:
         logger.info({"query": query})
-        search_result = []
         with DDGS(headers=headers, timeout=timeout) as ddgs:
             await asyncio.sleep(0.75)
             logger.debug("sleep 0.75")
@@ -122,7 +121,7 @@ async def ddg_parsing(
                 "unique_filtered_result": len(unique_result),
             }
         )
-        return unique_result
+        return search_result, unique_result
     except Exception as e:
         logger.error(f"{query}. Exception: {e}")
         if retries <= 0:
@@ -136,6 +135,7 @@ async def ddg_parsing(
 async def ddg_parsing_handler(
     user: types.User, queries: list[str], min_subscribers: int
 ):
+    raw_result = []
     result = set()
     for i, query in tqdm(  # noqa
         enumerate(queries),
@@ -144,20 +144,21 @@ async def ddg_parsing_handler(
         chat_id=user.id,
     ):
         logger.info(f"index {i}. START")
-        links = set()
+        unique_result = set()
         try:
-            links = await ddg_parsing(query, min_subscribers=min_subscribers)
-            result = result.union(links)
+            raw_result, unique_result = await ddg_parsing(query, min_subscribers=min_subscribers)
+            result = result.union(unique_result)
         except Exception as e:
             logger.error(e)
         logger.info(
             {
                 "index": i,
                 "query": query,
-                "links": len(links) if links is not None else None,
+                "links": len(unique_result) if unique_result is not None else None,
                 "all_links": len(result),
                 "min_subscribers": min_subscribers,
             }
         )
+        logger.info(" ")
         logger.info(f"index {i}. END")
-    return result
+    return result, raw_result

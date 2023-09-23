@@ -1,3 +1,4 @@
+import json
 import pathlib
 from contextlib import suppress
 
@@ -83,7 +84,7 @@ async def start_searching(
         return None
     generated_queries = generate_search_queries(*search_queries)
     generated_queries = [f"site:t.me {x}" for x in generated_queries]
-    channels = await ddg_parsing_handler(
+    channels, raw_result = await ddg_parsing_handler(
         query.from_user,
         generated_queries,
         min_subscribers=min_subscribers,
@@ -102,6 +103,10 @@ async def start_searching(
         "\n".join(generated_queries).encode("utf-8"),
         filename="queries.txt",
     )
+    responses = BufferedInputFile(
+        json.dumps(raw_result, ensure_ascii=False, indent=2).encode("utf-8"),
+        filename="responses.json",
+    )
     output_save_dir = pathlib.Path(__file__).parent.parent.parent.joinpath(
         pathlib.Path("data")
     )
@@ -114,6 +119,7 @@ async def start_searching(
         query.from_user.id,
         media=[
             InputMediaDocument(media=queries),
+            InputMediaDocument(media=responses),
             InputMediaDocument(media=output, caption=caption),
         ],
     )
