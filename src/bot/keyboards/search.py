@@ -16,14 +16,6 @@ def search_keyboard_builder():
     )
     builder.row(
         InlineKeyboardButton(
-            text="Set limit per query",
-            callback_data=MenuCallback(
-                name="change-search-limit",
-            ).pack(),
-        ),
-    )
-    builder.row(
-        InlineKeyboardButton(
             text="Set min subscribers",
             callback_data=MenuCallback(
                 name="change-min-subscribers",

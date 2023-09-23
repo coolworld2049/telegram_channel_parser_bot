@@ -9,18 +9,3 @@ services:
     ports:
       - "6379:6379"
       - "8001:8001"
-  selenium-hub:
-    extends:
-      service: selenium-hub
-      file: docker-compose.yml
-    depends_on:
-      - chrome-node1
-      - chrome-node2
-  chrome-node1:
-    extends:
-      service: chrome-node1
-      file: docker-compose.yml
-  chrome-node2:
-    extends:
-      service: chrome-node2
-      file: docker-compose.yml
