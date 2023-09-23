@@ -19,8 +19,7 @@ class BotSettings(BaseSettings):
     ]
     BOT_ACL: list[int] = []
     BOT_ACL_ENABLED: bool = False
-    DEFAULT_LIMIT_PER_QUERY: int = 100
-    DEFAULT_MIN_SUBSCRIBERS: int = 50
+    DEFAULT_MIN_SUBSCRIBERS: int = 100
     DEFAULT_MAX_QUERY_LEVELS: int = 3
 
 

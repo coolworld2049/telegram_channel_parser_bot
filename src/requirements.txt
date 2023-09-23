@@ -18,3 +18,5 @@ webdriver_manager
 BeautifulSoup4
 lxml
 fake_useragent
+
+duckduckgo_search
