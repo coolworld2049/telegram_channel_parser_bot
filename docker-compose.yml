@@ -16,7 +16,6 @@ services:
       - ./src/bot:/app/bot
     depends_on:
       - redis
-      - selenium-hub
     restart: always
   redis:
     image: redis/redis-stack-server:latest
