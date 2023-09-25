@@ -26,7 +26,7 @@ async def filter_parsing_result(
     new_url = url.replace("t.me/", "t.me/s/")
     source_html = None
     try:
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(trust_env=True) as session:
             async with session.get(url, headers=headers) as response:
                 response.raise_for_status()
                 source_html = await response.text()
@@ -93,10 +93,8 @@ async def ddg_parsing(
         pass
     rows: list[tuple] = []
     unique_result = set()
-    user_agent = UserAgent()
-    headers = {"User-Agent": user_agent.random}
     try:
-        with DDGS(headers=headers, timeout=timeout) as ddgs:
+        with DDGS(headers={"User-Agent": UserAgent().random}, timeout=timeout) as ddgs:
             for i, r in enumerate(
                 ddgs.text(
                     f"{dork} {q}",
@@ -147,15 +145,13 @@ async def ddg_parsing_handler(
         logger.info(
             f"INDEX {i}. Query `{query[1]}'. Region '{region_name}'. Min subscribers '{min_subscribers}'"
         )
-        unique_result = set()
         try:
             rows, unique_result = await ddg_parsing(
                 query,
                 min_subscribers=min_subscribers,
                 region_name=region_name,
             )
-            _unique_result = unique_result.copy()
-            for j, unique_url in enumerate(_unique_result):
+            for j, unique_url in enumerate(unique_result):
                 filter_result = await filter_parsing_result(
                     unique_url, min_subscribers=min_subscribers
                 )
@@ -165,14 +161,14 @@ async def ddg_parsing_handler(
                     "filter_result": filter_result,
                 }
                 if not filter_result:
-                    unique_result.discard(unique_url)
+                    results.discard(unique_url)
                     log_msg.update({"action": "DISCARD"})
                     logger.debug(log_msg)
                 else:
+                    results.add(unique_url)
+                    values.append(rows)
                     log_msg.update({"action": "ADD"})
                     logger.debug(log_msg)
-            results = results.union(unique_result)
-            values.append(rows)
             logger.info(f"Total unique links: {len(results)}")
         except Exception as e:
             logger.error(e)
