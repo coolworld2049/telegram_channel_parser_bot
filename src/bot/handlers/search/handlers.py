@@ -1,5 +1,4 @@
 import json
-import pathlib
 from contextlib import suppress
 
 from aiogram import Router, types, F
@@ -12,7 +11,10 @@ from bot.callbacks import MenuCallback
 from bot.keyboards.search import search_keyboard_builder
 from bot.loader import bot
 from bot.parser.ddg import ddg_parsing_handler
-from bot.parser.query_builder import generate_search_queries
+from bot.parser.query_builder import (
+    generate_search_queries,
+    get_region_by_code,
+)
 from bot.settings import get_settings
 from bot.states import SearchState
 from bot.template_engine import render_template
@@ -25,12 +27,16 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
         await bot.delete_message(user.id, message_id - 1)
     state_data = await state.get_data()
     search_queries: list[list[str]] = state_data.get("search_queries") or []
+    region_name: str = state_data.get("region_name") or get_region_by_code().get(
+        "wt-wt"
+    )
     min_subscribers = (
         state_data.get("min_subscribers") or get_settings().DEFAULT_MIN_SUBSCRIBERS
     )
     await state.update_data(
         search_queries=search_queries,
         min_subscribers=min_subscribers,
+        region_name=region_name,
     )
     max_query_levels = get_settings().DEFAULT_MAX_QUERY_LEVELS
     keywords = [", ".join(x) for i, x in enumerate(search_queries)]
@@ -50,8 +56,8 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
     text = render_template(
         "search_menu.html",
         query_count=len(generated_search_queries),
-        max_query_levels=max_query_levels,
         min_subscribers=min_subscribers,
+        region_name=region_name,
         keywords=enumerate(new_keywords),
         keyword_ids=", ".join([str(x) for x in range(len(search_queries))]),
     )
@@ -59,6 +65,7 @@ async def start_search_handler(user: User, state: FSMContext, message_id: int = 
         user.id,
         text,
         reply_markup=search_keyboard_builder().as_markup(),
+        disable_web_page_preview=True,
     )
 
 
@@ -79,15 +86,17 @@ async def start_searching(
     state_data = await state.get_data()
     search_queries: list[list[str]] = state_data.get("search_queries")
     min_subscribers = state_data.get("min_subscribers")
+    region_name = state_data.get("region_name")
     if not search_queries:
         await query.answer("There are no keywords list")
         return None
     generated_queries = generate_search_queries(*search_queries)
-    generated_queries = [f"site:t.me {x}" for x in generated_queries]
-    channels, raw_result = await ddg_parsing_handler(
+    generated_queries = [("site:t.me", x) for x in generated_queries]
+    channels, search_values = await ddg_parsing_handler(
         query.from_user,
         generated_queries,
         min_subscribers=min_subscribers,
+        region_name=region_name,
     )
     if not channels:
         await bot.send_message(query.from_user.id, "No channels found")
@@ -98,28 +107,22 @@ async def start_searching(
         query=search_queries_fragment,
         channels_count=len(channels),
     )
-
     queries = BufferedInputFile(
-        "\n".join(generated_queries).encode("utf-8"),
+        "\n".join(list(map(lambda x: f"{x[0]} {x[1]}", generated_queries))).encode(
+            "utf-8"
+        ),
         filename="queries.txt",
     )
-    responses = BufferedInputFile(
-        json.dumps(raw_result, ensure_ascii=False, indent=2).encode("utf-8"),
+    search_values = BufferedInputFile(
+        json.dumps(search_values, ensure_ascii=False, indent=2).encode("utf-8"),
         filename="responses.json",
     )
-    output_save_dir = pathlib.Path(__file__).parent.parent.parent.joinpath(
-        pathlib.Path("data")
-    )
-    output_save_dir.mkdir(exist_ok=True)
     output = BufferedInputFile("\n".join(channels).encode("utf-8"), "output.txt")
-    output_save_dir.joinpath(output.filename.replace(".txt", ".md")).write_bytes(
-        output.data
-    )
     await bot.send_media_group(
         query.from_user.id,
         media=[
             InputMediaDocument(media=queries),
-            InputMediaDocument(media=responses),
+            InputMediaDocument(media=search_values),
             InputMediaDocument(media=output, caption=caption),
         ],
     )
@@ -140,6 +143,23 @@ async def change_min_subscribers_state(message: types.Message, state: FSMContext
         await state.update_data(min_subscribers=int(message.text))
     except Exception as e:  # noqa
         await message.answer("Minimal subscribers must be an integer")
+    await start_search_handler(message.from_user, state, message.message_id)
+
+
+@router.callback_query(MenuCallback.filter(F.name == "change-region-name"))
+async def change_region_name(
+    query: types.CallbackQuery, callback_data: MenuCallback, state: FSMContext
+):
+    await query.answer("Enter a region name from the list")
+    await state.set_state(SearchState.change_region_name)
+
+
+@router.message(SearchState.change_region_name)
+async def change_region_name_state(message: types.Message, state: FSMContext):
+    try:
+        await state.update_data(region_name=message.text)
+    except Exception as e:  # noqa
+        await message.answer(str(e))
     await start_search_handler(message.from_user, state, message.message_id)
 
 

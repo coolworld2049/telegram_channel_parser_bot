@@ -24,6 +24,14 @@ def search_keyboard_builder():
     )
     builder.row(
         InlineKeyboardButton(
+            text="Set region name",
+            callback_data=MenuCallback(
+                name="change-region-name",
+            ).pack(),
+        ),
+    )
+    builder.row(
+        InlineKeyboardButton(
             text="➕",
             callback_data=MenuCallback(
                 name="extend-search-queries",

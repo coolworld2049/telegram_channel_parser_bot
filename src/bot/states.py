@@ -6,3 +6,4 @@ class SearchState(StatesGroup):
     delete = State()
     replace = State()
     change_min_subscribers = State()
+    change_region_name = State()
