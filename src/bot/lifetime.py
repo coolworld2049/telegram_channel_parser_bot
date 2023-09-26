@@ -1,9 +1,9 @@
 from aiogram import Dispatcher
 from loguru import logger
 
-from settings import get_settings
 from handlers import main
 from loader import bot
+from settings import get_settings
 
 
 async def startup_bot(dp: Dispatcher) -> None:
@@ -15,6 +15,5 @@ async def startup_bot(dp: Dispatcher) -> None:
 
 
 async def shutdown_bot(dp: Dispatcher) -> None:
-    logger.info("Shutdown selenium_webdriver")
     await dp.storage.close()
     logger.info("Shutdown bot")
