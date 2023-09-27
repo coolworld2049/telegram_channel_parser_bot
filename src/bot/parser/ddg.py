@@ -81,7 +81,7 @@ async def ddg_parsing(
     query: tuple[str, str],
     retries: int = 3,
     timeout: float = 15,
-    search_limit=5,
+    search_limit=7,
     **kwargs,
 ):
     dork = query[0]
@@ -159,10 +159,10 @@ async def ddg_parsing_handler(
         chat_id=user.id,
     ):
         logger.info(
-            f"INDEX {i}. Query `{query[1]}'"
-            f" .Region '{region_name}'"
-            f" .Min subscribers '{min_subscribers}'"
-            f" - Total unique links: {len(results)}"
+            f"INDEX {i}. Query `{query[1]}'. "
+            f"Region '{region_name}'. "
+            f"Min subscribers '{min_subscribers}' - "
+            f"Total unique links: {len(results)}"
         )
         try:
             rows, unique_href = await ddg_parsing(

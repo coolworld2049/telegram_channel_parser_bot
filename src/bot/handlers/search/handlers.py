@@ -1,6 +1,5 @@
 import pathlib
 from contextlib import suppress
-from io import StringIO
 
 import pandas
 from aiogram import Router, types, F
@@ -103,39 +102,56 @@ async def start_searching(
     if not channels:
         await bot.send_message(query.from_user.id, "No channels found")
         return
-    search_queries_fragment = " | ".join(list(map(lambda x: x[0], search_queries)))
-    caption = render_template(
-        "parse_result.html",
-        query=search_queries_fragment,
-        channels_count=len(channels),
-    )
+
     queries = BufferedInputFile(
         "\n".join(list(map(lambda x: f"{x[0]} {x[1]}", generated_queries))).encode(
             "utf-8"
         ),
         filename="queries.txt",
     )
-    buffer = StringIO()
+    responses_dir = pathlib.Path(__file__).parent.parent.parent.joinpath("data")
+    responses_dir.mkdir(exist_ok=True)
+
     responses_df = pandas.concat(list_df, ignore_index=True)
-    if get_settings().LOG_LEVEL == "DEBUG":
-        responses_dir = pathlib.Path(__file__).parent.parent.parent.joinpath("data")
-        responses_dir.mkdir(exist_ok=True)
-        responses_path = responses_dir.joinpath("responses.csv")
-        responses_path.unlink(missing_ok=True)
-        responses_df.to_csv(responses_path, encoding="utf-8")
-    responses_df.to_csv(buffer, encoding="utf-8")
-    buffer.seek(0)
+    unique_responses_df = responses_df.drop_duplicates(subset=["href"], keep=False)
+
+    responses_path = responses_dir.joinpath("responses.csv")
+    unique_responses_path = responses_dir.joinpath("unique_responses.csv")
+
+    responses_path.unlink(missing_ok=True)
+    unique_responses_path.unlink(missing_ok=True)
+
+    responses_df.to_csv(responses_path, encoding="utf-8")
+    unique_responses_df.to_csv(unique_responses_path, encoding="utf-8")
+
     responses = BufferedInputFile(
-        buffer.read().encode("utf-8"),
-        filename="responses.csv",
+        responses_path.read_bytes(),
+        filename=responses_path.name,
+    )
+    unique_responses = BufferedInputFile(
+        unique_responses_path.read_bytes(),
+        filename=unique_responses_path.name,
     )
     output = BufferedInputFile("\n".join(channels).encode("utf-8"), "output.txt")
+
+    search_queries_fragment = " | ".join(list(map(lambda x: x[0], search_queries)))
+    caption = render_template(
+        "parse_result.html",
+        query=search_queries_fragment,
+        channels_count=unique_responses_df.__len__(),
+    )
     await bot.send_media_group(
         query.from_user.id,
         media=[
-            InputMediaDocument(media=queries),
+            InputMediaDocument(media=queries, caption=caption),
+            InputMediaDocument(media=output),
+            InputMediaDocument(media=unique_responses),
+        ],
+    )
+    await bot.send_media_group(
+        query.from_user.id,
+        media=[
             InputMediaDocument(media=responses),
-            InputMediaDocument(media=output, caption=caption),
         ],
     )
     await bot.send_message(query.from_user.id, caption)
