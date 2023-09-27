@@ -12,6 +12,7 @@ from loguru import logger
 from bot.callbacks import MenuCallback
 from bot.handlers import search
 from bot.loader import bot
+from bot.settings import get_settings
 from bot.template_engine import render_template
 
 router = Router(name=__file__)
@@ -55,6 +56,11 @@ async def start_callback(
 
 @router.message(Command("logs"))
 async def start_message(message: Message, state: FSMContext):
+    if (
+        message.from_user.id not in get_settings().BOT_ACL
+        and get_settings().BOT_ACL_ENABLED
+    ):
+        return None
     path = pathlib.Path(__file__).parent.parent.joinpath(".logs")
     target_file = min(path.iterdir(), key=os.path.getctime)
     if target_file:
