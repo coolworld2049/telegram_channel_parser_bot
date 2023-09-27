@@ -79,8 +79,8 @@ async def filter_parsing_result(
 
 async def ddg_parsing(
     query: tuple[str, str],
-    retries: int = 5,
-    timeout: float = 10,
+    retries: int = 3,
+    timeout: float = 15,
     search_limit=5,
     **kwargs,
 ):
@@ -93,9 +93,17 @@ async def ddg_parsing(
     except:  # noqa
         pass
     rows: list[tuple] = []
-    unique_result = set()
+    unique_href = set()
     try:
-        with DDGS(headers={"User-Agent": UserAgent().random}, timeout=timeout) as ddgs:
+        with DDGS(
+            headers={
+                "User-Agent": UserAgent(
+                    browsers=["chrome", "firefox"],
+                    os=["windows", "linux"]
+                ).random,
+            },
+            timeout=timeout,
+        ) as ddgs:
             for i, r in enumerate(
                 ddgs.text(
                     f"{dork} {q}",
@@ -111,7 +119,7 @@ async def ddg_parsing(
                     usp = urlsplit(usp.geturl().replace(f"?{usp.query}", ""))
                 url = usp.geturl()
                 url = url.replace("/s/", "/")
-                unique_result.add(url)
+                unique_href.add(url)
                 rows.append(
                     (
                         q,
@@ -122,14 +130,14 @@ async def ddg_parsing(
                         r["body"],
                     )
                 )
-        logger.debug(f"Unique links number: {len(unique_result)}")
-        return rows, unique_result
+        logger.debug(f"Unique links number: {len(unique_href)}")
+        return rows, unique_href
     except Exception as e:
-        logger.error(f"query {query}. Exception: {e}")
+        logger.error(f"query {q}. Exception: {e}")
         if retries <= 0:
             logger.exception(e)
             raise e
-        logger.info(f"query {query}. Retry")
+        logger.info(f"query {q}. Retry")
         await asyncio.sleep(timeout)
         await ddg_parsing(query, retries - 1, timeout + 1, **kwargs)
 
@@ -151,32 +159,34 @@ async def ddg_parsing_handler(
         chat_id=user.id,
     ):
         logger.info(
-            f"INDEX {i}. Query `{query[1]}'. Region '{region_name}'. Min subscribers '{min_subscribers}'"
+            f"INDEX {i}. Query `{query[1]}'"
+            f" .Region '{region_name}'"
+            f" .Min subscribers '{min_subscribers}'"
+            f" - Total unique links: {len(results)}"
         )
         try:
-            rows, unique_result = await ddg_parsing(
+            rows, unique_href = await ddg_parsing(
                 query,
                 min_subscribers=min_subscribers,
                 region_name=region_name,
             )
             all_rows.append(rows)
-            for j, unique_url in enumerate(unique_result):
+            for j, u_href in enumerate(unique_href):
                 filter_result = await filter_parsing_result(
-                    unique_url, min_subscribers=min_subscribers
+                    u_href, min_subscribers=min_subscribers
                 )
                 log_msg = {
                     "filter": {"min_subscribers": min_subscribers},
                     "filter_result": filter_result,
                 }
                 if not filter_result:
-                    results.discard(unique_url)
+                    results.discard(u_href)
                     log_msg.update({"action": "DISCARD"})
                     logger.debug(log_msg)
                 else:
-                    results.add(unique_url)
+                    results.add(u_href)
                     log_msg.update({"action": "ADD"})
                     logger.debug(log_msg)
-            logger.info(f"Total unique links: {len(results)}")
         except Exception as e:
             logger.error(e)
     rows: list[tuple] = []
