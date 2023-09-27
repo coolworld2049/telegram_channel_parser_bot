@@ -2,6 +2,7 @@ import asyncio
 from urllib.parse import urlsplit
 
 import aiohttp
+import pandas
 from aiogram import types
 from bs4 import BeautifulSoup
 from duckduckgo_search import DDGS
@@ -80,7 +81,7 @@ async def ddg_parsing(
     query: tuple[str, str],
     retries: int = 5,
     timeout: float = 10,
-    search_limit=6,
+    search_limit=5,
     **kwargs,
 ):
     dork = query[0]
@@ -107,16 +108,22 @@ async def ddg_parsing(
                     break
                 usp = urlsplit(r["href"])
                 if usp.query:
-                    usp = urlsplit(usp.geturl().replace(f"?{usp.query}", ""))
-                unique_result.add(usp.geturl())
+                    usp = urlsplit(
+                        usp.geturl().replace("/s/", "/").replace(f"?{usp.query}", "")
+                    )
+                url = usp.geturl()
+                unique_result.add(url)
                 rows.append(
                     (
                         q,
                         dork,
-                        *list(r.values()),
+                        url,
+                        r["href"],
+                        r["title"],
+                        r["body"],
                     )
                 )
-        logger.info(f"Unique links number: {len(unique_result)}")
+        logger.debug(f"Unique links number: {len(unique_result)}")
         return rows, unique_result
     except Exception as e:
         logger.error(f"query {query}. Exception: {e}")
@@ -134,8 +141,10 @@ async def ddg_parsing_handler(
     min_subscribers: int,
     region_name: str,
 ):
-    values = [["query", "dork", "title", "href", "body"]]
+    columns = ["query", "dork", "href", "href_orig", "title", "body"]
+    list_df: list[pandas.DataFrame] = []
     results = set()
+    all_rows: list[list[tuple]] = []
     for i, query in tqdm(  # noqa
         enumerate(queries),
         total=len(queries),
@@ -151,12 +160,12 @@ async def ddg_parsing_handler(
                 min_subscribers=min_subscribers,
                 region_name=region_name,
             )
+            all_rows.append(rows)
             for j, unique_url in enumerate(unique_result):
                 filter_result = await filter_parsing_result(
                     unique_url, min_subscribers=min_subscribers
                 )
                 log_msg = {
-                    "url": unique_url,
                     "filter": {"min_subscribers": min_subscribers},
                     "filter_result": filter_result,
                 }
@@ -166,11 +175,14 @@ async def ddg_parsing_handler(
                     logger.debug(log_msg)
                 else:
                     results.add(unique_url)
-                    values.append(rows)
                     log_msg.update({"action": "ADD"})
                     logger.debug(log_msg)
             logger.info(f"Total unique links: {len(results)}")
         except Exception as e:
             logger.error(e)
-
-    return results, values
+    rows: list[tuple] = []
+    for row in all_rows:
+        rows.extend(row)
+    filtered_rows = list(filter(lambda x: x[2], rows))
+    list_df.append(pandas.DataFrame(filtered_rows, columns=columns))
+    return results, list_df

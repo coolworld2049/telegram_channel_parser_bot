@@ -1,6 +1,8 @@
-import json
+import pathlib
 from contextlib import suppress
+from io import StringIO
 
+import pandas
 from aiogram import Router, types, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
@@ -92,7 +94,7 @@ async def start_searching(
         return None
     generated_queries = generate_search_queries(*search_queries)
     generated_queries = [("site:t.me", x) for x in generated_queries]
-    channels, search_values = await ddg_parsing_handler(
+    channels, list_df = await ddg_parsing_handler(
         query.from_user,
         generated_queries,
         min_subscribers=min_subscribers,
@@ -113,16 +115,26 @@ async def start_searching(
         ),
         filename="queries.txt",
     )
-    search_values = BufferedInputFile(
-        json.dumps(search_values, ensure_ascii=False, indent=2).encode("utf-8"),
-        filename="responses.json",
+    buffer = StringIO()
+    responses_df = pandas.concat(list_df, ignore_index=True)
+    if get_settings().LOG_LEVEL == "DEBUG":
+        responses_dir = pathlib.Path(__file__).parent.parent.parent.joinpath("data")
+        responses_dir.mkdir(exist_ok=True)
+        responses_path = responses_dir.joinpath("responses.csv")
+        responses_path.unlink(missing_ok=True)
+        responses_df.to_csv(responses_path, encoding="utf-8")
+    responses_df.to_csv(buffer, encoding="utf-8")
+    buffer.seek(0)
+    responses = BufferedInputFile(
+        buffer.read().encode("utf-8"),
+        filename="responses.csv",
     )
     output = BufferedInputFile("\n".join(channels).encode("utf-8"), "output.txt")
     await bot.send_media_group(
         query.from_user.id,
         media=[
             InputMediaDocument(media=queries),
-            InputMediaDocument(media=search_values),
+            InputMediaDocument(media=responses),
             InputMediaDocument(media=output, caption=caption),
         ],
     )
