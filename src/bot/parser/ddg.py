@@ -42,13 +42,14 @@ async def filter_parsing_result(
             min_subscribers=min_subscribers,
             retries=retries - 1,
         )
+    subs_counter = None
+    text = None
     soup = BeautifulSoup(source_html, "lxml")
     try:
         tgme_page_extra = soup.find("div", attrs="tgme_page_extra") or soup.find(
             "div", attrs="tgme_header_counter"
         )
         text = tgme_page_extra.text
-        subs_counter = None
         # logger.opt(colors=True).debug(f"url {url}, <yellow>text: {text}</yellow>")
 
         if "online" in text and "members" in text:
@@ -92,14 +93,13 @@ async def ddg_parsing(
             region_code = get_code_by_region().get(kwargs.get("region_name"))
     except:  # noqa
         pass
-    rows: list[tuple] = []
+    rows: list[list] = []
     unique_href = set()
     try:
         with DDGS(
             headers={
                 "User-Agent": UserAgent(
-                    browsers=["chrome", "firefox"],
-                    os=["windows", "linux"]
+                    browsers=["chrome", "firefox"], os=["windows", "linux"]
                 ).random,
             },
             timeout=timeout,
@@ -116,21 +116,21 @@ async def ddg_parsing(
                     break
                 usp = urlsplit(r["href"])
                 if usp.query:
-                    usp = urlsplit(usp.geturl().replace(f"?{usp.query}", ""))
-                url = usp.geturl()
-                url = url.replace("/s/", "/")
+                    continue
+                    # usp = urlsplit(usp.geturl().replace(f"?{usp.query}", ""))
+                url = usp.geturl().replace("/s/", "/")
                 unique_href.add(url)
                 rows.append(
-                    (
+                    [
                         q,
                         dork,
                         url,
                         r["href"],
                         r["title"],
                         r["body"],
-                    )
+                    ]
                 )
-        logger.debug(f"Unique links number: {len(unique_href)}")
+        logger.info(f"Unique links number: {len(unique_href)}")
         return rows, unique_href
     except Exception as e:
         logger.error(f"query {q}. Exception: {e}")
@@ -151,7 +151,7 @@ async def ddg_parsing_handler(
     columns = ["query", "dork", "href", "href_orig", "title", "body"]
     list_df: list[pandas.DataFrame] = []
     results = set()
-    all_rows: list[list[tuple]] = []
+    all_rows: list[list] = []
     for i, query in tqdm(  # noqa
         enumerate(queries),
         total=len(queries),
@@ -170,12 +170,13 @@ async def ddg_parsing_handler(
                 min_subscribers=min_subscribers,
                 region_name=region_name,
             )
-            all_rows.append(rows)
-            for j, u_href in enumerate(unique_href):
+            all_rows.extend(rows)
+            for u_href in unique_href:
                 filter_result = await filter_parsing_result(
                     u_href, min_subscribers=min_subscribers
                 )
                 log_msg = {
+                    "url": query[1],
                     "filter": {"min_subscribers": min_subscribers},
                     "filter_result": filter_result,
                 }
@@ -189,10 +190,6 @@ async def ddg_parsing_handler(
                     logger.debug(log_msg)
         except Exception as e:
             logger.error(e)
-    rows: list[tuple] = []
-    filtered_rows = []
-    for row in all_rows:
-        rows.extend(row)
-    filtered_rows = list(filter(lambda x: not results.issubset({x[2]}), rows))
-    list_df.append(pandas.DataFrame(filtered_rows, columns=columns))
-    return results, list_df
+    df = pandas.DataFrame(all_rows, columns=columns)
+    df.drop_duplicates(subset=["href"], inplace=True, ignore_index=True)
+    return results, df
