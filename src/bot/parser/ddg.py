@@ -1,4 +1,6 @@
 import asyncio
+import random
+from typing import Literal
 from urllib.parse import urlsplit
 
 import aiohttp
@@ -83,6 +85,7 @@ async def ddg_parsing(
     retries: int = 3,
     timeout: float = 15,
     search_limit=7,
+    backend_name: Literal["api", "html", "lite"] | None = None,
     **kwargs,
 ):
     dork = query[0]
@@ -107,8 +110,8 @@ async def ddg_parsing(
             for i, r in enumerate(
                 ddgs.text(
                     f"{dork} {q}",
-                    safesearch="moderate",
-                    backend="api",
+                    safesearch="on",
+                    backend=backend_name or random.choice(["api", "html", "lite"]),
                     region=region_code,
                 )
             ):
@@ -133,13 +136,15 @@ async def ddg_parsing(
         logger.info(f"Unique links number: {len(unique_href)}")
         return rows, unique_href
     except Exception as e:
-        logger.error(f"query {q}. Exception: {e}")
+        logger.error(f"query {q}. Exception: {e.__class__} - {e.args}")
         if retries <= 0:
             logger.exception(e)
             raise e
         logger.info(f"query {q}. Retry")
         await asyncio.sleep(timeout)
-        await ddg_parsing(query, retries - 1, timeout + 1, **kwargs)
+        await ddg_parsing(
+            query, retries - 1, timeout + 2, backend_name=backend_name, **kwargs
+        )
 
 
 async def ddg_parsing_handler(
@@ -148,6 +153,7 @@ async def ddg_parsing_handler(
     min_subscribers: int,
     region_name: str,
 ):
+    backend_names = ["api", "html", "lite"]
     columns = ["query", "dork", "href", "href_orig", "title", "body"]
     list_df: list[pandas.DataFrame] = []
     results = set()
@@ -158,6 +164,7 @@ async def ddg_parsing_handler(
         token=get_settings().BOT_TOKEN,
         chat_id=user.id,
     ):
+        backend_name = backend_names.pop(0)
         logger.info(
             f"INDEX {i}. Query `{query[1]}'. "
             f"Region '{region_name}'. "
@@ -168,6 +175,7 @@ async def ddg_parsing_handler(
             rows, unique_href = await ddg_parsing(
                 query,
                 min_subscribers=min_subscribers,
+                backend_name=backend_name,
                 region_name=region_name,
             )
             all_rows.extend(rows)
@@ -190,6 +198,8 @@ async def ddg_parsing_handler(
                     logger.debug(log_msg)
         except Exception as e:
             logger.error(e)
+        finally:
+            backend_names.append(backend_name)
     df = pandas.DataFrame(all_rows, columns=columns)
     df.drop_duplicates(subset=["href"], inplace=True, ignore_index=True)
     return results, df
