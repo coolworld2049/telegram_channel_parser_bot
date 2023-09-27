@@ -1,4 +1,4 @@
-import json
+import pathlib
 from contextlib import suppress
 
 from aiogram import Router, types, F
@@ -92,7 +92,7 @@ async def start_searching(
         return None
     generated_queries = generate_search_queries(*search_queries)
     generated_queries = [("site:t.me", x) for x in generated_queries]
-    channels, search_values = await ddg_parsing_handler(
+    channels, df = await ddg_parsing_handler(
         query.from_user,
         generated_queries,
         min_subscribers=min_subscribers,
@@ -101,29 +101,41 @@ async def start_searching(
     if not channels:
         await bot.send_message(query.from_user.id, "No channels found")
         return
-    search_queries_fragment = " | ".join(list(map(lambda x: x[0], search_queries)))
-    caption = render_template(
-        "parse_result.html",
-        query=search_queries_fragment,
-        channels_count=len(channels),
-    )
+    save_dir = pathlib.Path(__file__).parent.parent.parent.joinpath("data")
+    save_dir.mkdir(exist_ok=True)
+
     queries = BufferedInputFile(
         "\n".join(list(map(lambda x: f"{x[0]} {x[1]}", generated_queries))).encode(
             "utf-8"
         ),
         filename="queries.txt",
     )
-    search_values = BufferedInputFile(
-        json.dumps(search_values, ensure_ascii=False, indent=2).encode("utf-8"),
-        filename="responses.json",
+    save_dir.joinpath("queries.txt").write_bytes(queries.data)
+
+    responses_path = save_dir.joinpath("responses.csv")
+    responses_path.unlink(missing_ok=True)
+    df.sort_values(by="query")
+    df.to_csv(responses_path, encoding="utf-8")
+
+    responses = BufferedInputFile(
+        responses_path.read_bytes(),
+        filename=responses_path.name,
     )
     output = BufferedInputFile("\n".join(channels).encode("utf-8"), "output.txt")
+    save_dir.joinpath("output.md").write_bytes(output.data)
+
+    search_queries_fragment = " | ".join(list(map(lambda x: x[0], search_queries)))
+    caption = render_template(
+        "parse_result.html",
+        query=search_queries_fragment,
+        channels_count=len(channels),
+    )
     await bot.send_media_group(
         query.from_user.id,
         media=[
             InputMediaDocument(media=queries),
-            InputMediaDocument(media=search_values),
-            InputMediaDocument(media=output, caption=caption),
+            InputMediaDocument(media=output),
+            InputMediaDocument(media=responses, caption=caption),
         ],
     )
     await bot.send_message(query.from_user.id, caption)

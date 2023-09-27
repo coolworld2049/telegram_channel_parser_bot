@@ -12,3 +12,4 @@ BeautifulSoup4
 lxml
 fake_useragent==1.2.1
 duckduckgo_search
+pandas

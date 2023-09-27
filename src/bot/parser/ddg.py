@@ -1,7 +1,10 @@
 import asyncio
+import random
+from typing import Literal
 from urllib.parse import urlsplit
 
 import aiohttp
+import pandas
 from aiogram import types
 from bs4 import BeautifulSoup
 from duckduckgo_search import DDGS
@@ -41,13 +44,14 @@ async def filter_parsing_result(
             min_subscribers=min_subscribers,
             retries=retries - 1,
         )
+    subs_counter = None
+    text = None
     soup = BeautifulSoup(source_html, "lxml")
     try:
         tgme_page_extra = soup.find("div", attrs="tgme_page_extra") or soup.find(
             "div", attrs="tgme_header_counter"
         )
         text = tgme_page_extra.text
-        subs_counter = None
         # logger.opt(colors=True).debug(f"url {url}, <yellow>text: {text}</yellow>")
 
         if "online" in text and "members" in text:
@@ -78,9 +82,10 @@ async def filter_parsing_result(
 
 async def ddg_parsing(
     query: tuple[str, str],
-    retries: int = 5,
-    timeout: float = 10,
-    search_limit=6,
+    retries: int = 3,
+    timeout: float = 15,
+    search_limit=7,
+    backend_name: Literal["api", "html", "lite"] | None = None,
     **kwargs,
 ):
     dork = query[0]
@@ -91,15 +96,22 @@ async def ddg_parsing(
             region_code = get_code_by_region().get(kwargs.get("region_name"))
     except:  # noqa
         pass
-    rows: list[tuple] = []
-    unique_result = set()
+    rows: list[list] = []
+    unique_href = set()
     try:
-        with DDGS(headers={"User-Agent": UserAgent().random}, timeout=timeout) as ddgs:
+        with DDGS(
+            headers={
+                "User-Agent": UserAgent(
+                    browsers=["chrome", "firefox"], os=["windows", "linux"]
+                ).random,
+            },
+            timeout=timeout,
+        ) as ddgs:
             for i, r in enumerate(
                 ddgs.text(
                     f"{dork} {q}",
-                    safesearch="moderate",
-                    backend="api",
+                    safesearch="on",
+                    backend=backend_name or random.choice(["api", "html", "lite"]),
                     region=region_code,
                 )
             ):
@@ -107,25 +119,32 @@ async def ddg_parsing(
                     break
                 usp = urlsplit(r["href"])
                 if usp.query:
-                    usp = urlsplit(usp.geturl().replace(f"?{usp.query}", ""))
-                unique_result.add(usp.geturl())
+                    continue
+                    # usp = urlsplit(usp.geturl().replace(f"?{usp.query}", ""))
+                url = usp.geturl().replace("/s/", "/")
+                unique_href.add(url)
                 rows.append(
-                    (
+                    [
                         q,
                         dork,
-                        *list(r.values()),
-                    )
+                        url,
+                        r["href"],
+                        r["title"],
+                        r["body"],
+                    ]
                 )
-        logger.info(f"Unique links number: {len(unique_result)}")
-        return rows, unique_result
+        logger.info(f"Unique links number: {len(unique_href)}")
+        return rows, unique_href
     except Exception as e:
-        logger.error(f"query {query}. Exception: {e}")
+        logger.error(f"query {q}. Exception: {e.__class__} - {e.args}")
         if retries <= 0:
             logger.exception(e)
             raise e
-        logger.info(f"query {query}. Retry")
+        logger.info(f"query {q}. Retry")
         await asyncio.sleep(timeout)
-        await ddg_parsing(query, retries - 1, timeout + 1, **kwargs)
+        await ddg_parsing(
+            query, retries - 1, timeout + 2, backend_name=backend_name, **kwargs
+        )
 
 
 async def ddg_parsing_handler(
@@ -134,43 +153,53 @@ async def ddg_parsing_handler(
     min_subscribers: int,
     region_name: str,
 ):
-    values = [["query", "dork", "title", "href", "body"]]
+    backend_names = ["api", "html", "lite"]
+    columns = ["query", "dork", "href", "href_orig", "title", "body"]
+    list_df: list[pandas.DataFrame] = []
     results = set()
+    all_rows: list[list] = []
     for i, query in tqdm(  # noqa
         enumerate(queries),
         total=len(queries),
         token=get_settings().BOT_TOKEN,
         chat_id=user.id,
     ):
+        backend_name = backend_names.pop(0)
         logger.info(
-            f"INDEX {i}. Query `{query[1]}'. Region '{region_name}'. Min subscribers '{min_subscribers}'"
+            f"INDEX {i}. Query `{query[1]}'. "
+            f"Region '{region_name}'. "
+            f"Min subscribers '{min_subscribers}' - "
+            f"Total unique links: {len(results)}"
         )
         try:
-            rows, unique_result = await ddg_parsing(
+            rows, unique_href = await ddg_parsing(
                 query,
                 min_subscribers=min_subscribers,
+                backend_name=backend_name,
                 region_name=region_name,
             )
-            for j, unique_url in enumerate(unique_result):
+            all_rows.extend(rows)
+            for u_href in unique_href:
                 filter_result = await filter_parsing_result(
-                    unique_url, min_subscribers=min_subscribers
+                    u_href, min_subscribers=min_subscribers
                 )
                 log_msg = {
-                    "url": unique_url,
+                    "url": query[1],
                     "filter": {"min_subscribers": min_subscribers},
                     "filter_result": filter_result,
                 }
                 if not filter_result:
-                    results.discard(unique_url)
+                    results.discard(u_href)
                     log_msg.update({"action": "DISCARD"})
                     logger.debug(log_msg)
                 else:
-                    results.add(unique_url)
-                    values.append(rows)
+                    results.add(u_href)
                     log_msg.update({"action": "ADD"})
                     logger.debug(log_msg)
-            logger.info(f"Total unique links: {len(results)}")
         except Exception as e:
             logger.error(e)
-
-    return results, values
+        finally:
+            backend_names.append(backend_name)
+    df = pandas.DataFrame(all_rows, columns=columns)
+    df.drop_duplicates(subset=["href"], inplace=True, ignore_index=True)
+    return results, df
