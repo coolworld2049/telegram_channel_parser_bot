@@ -108,10 +108,9 @@ async def ddg_parsing(
                     break
                 usp = urlsplit(r["href"])
                 if usp.query:
-                    usp = urlsplit(
-                        usp.geturl().replace("/s/", "/").replace(f"?{usp.query}", "")
-                    )
+                    usp = urlsplit(usp.geturl().replace(f"?{usp.query}", ""))
                 url = usp.geturl()
+                url = url.replace("/s/", "/")
                 unique_result.add(url)
                 rows.append(
                     (
@@ -181,8 +180,9 @@ async def ddg_parsing_handler(
         except Exception as e:
             logger.error(e)
     rows: list[tuple] = []
+    filtered_rows = []
     for row in all_rows:
         rows.extend(row)
-    filtered_rows = list(filter(lambda x: x[2], rows))
+    filtered_rows = list(filter(lambda x: not results.issubset({x[2]}), rows))
     list_df.append(pandas.DataFrame(filtered_rows, columns=columns))
     return results, list_df
